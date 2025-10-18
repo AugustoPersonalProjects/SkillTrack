@@ -1,5 +1,7 @@
-package com.skilltrack.dto;
+package br.com.fiap.skilltrack_backend_java.skilltrack.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -11,12 +13,15 @@ import java.time.LocalDate;
 @NoArgsConstructor
 public class GoalRequestDTO {
 
-    @NotBlank(message = "A descrição da meta é obrigatória")
+    @NotBlank(message = "A descrição é obrigatória")
     private String description;
 
-    @NotNull(message = "A data limite é obrigatória")
+    @FutureOrPresent(message = "A data limite deve ser futura")
     private LocalDate deadline;
 
-    @NotNull(message = "O id da habilidade é obrigatório")
+    @JsonProperty("skill_id")
+    @NotNull(message = "O ID da habilidade é obrigatório")
     private Long skillId;
+
+    private boolean completed;
 }

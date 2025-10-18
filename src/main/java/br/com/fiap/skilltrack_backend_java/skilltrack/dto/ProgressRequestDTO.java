@@ -1,7 +1,11 @@
 package br.com.fiap.skilltrack_backend_java.skilltrack.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -9,9 +13,13 @@ import lombok.*;
 @NoArgsConstructor
 public class ProgressRequestDTO {
 
-    @NotNull(message = "O id da habilidade é obrigatório")
+    @JsonProperty("skill_id")
+    @NotNull(message = "O ID da habilidade é obrigatório")
     private Long skillId;
 
-    @NotNull(message = "A porcentagem de progresso é obrigatória")
-    private Double percentage;
+    @Min(0)
+    @Max(100)
+    private int percentage;
+
+    private LocalDate date;
 }
