@@ -13,15 +13,13 @@ import java.time.LocalDate;
 @NoArgsConstructor
 public class GoalRequestDTO {
 
-    @NotBlank(message = "A descrição é obrigatória")
+    @NotBlank(message = "A descrição da meta é obrigatória")
     private String description;
 
-    @FutureOrPresent(message = "A data limite deve ser futura")
+    @FutureOrPresent(message = "A data limite deve ser futura ou presente")
     private LocalDate deadline;
 
     @JsonProperty("skill_id")
     @NotNull(message = "O ID da habilidade é obrigatório")
     private Long skillId;
-
-    private boolean completed;
 }

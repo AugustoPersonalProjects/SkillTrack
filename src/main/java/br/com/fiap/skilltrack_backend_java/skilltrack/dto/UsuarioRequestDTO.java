@@ -19,12 +19,13 @@ public class UsuarioRequestDTO {
 
     @NotBlank(message = "O e-mail é obrigatório")
     @Email
+    @Size(max = 150)
     private String email;
 
     @NotBlank(message = "A senha é obrigatória")
     @Size(min = 6, max = 150)
     private String senha;
 
-    @NotNull(message = "O perfil é obrigatório")
+    @NotNull(message = "O perfil do usuário é obrigatório")
     private Perfil perfil;
 }

@@ -1,17 +1,17 @@
 package br.com.fiap.skilltrack_backend_java.skilltrack.dto;
 
+import br.com.fiap.skilltrack_backend_java.skilltrack.model.enums.SkillLevel;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.*;
 import org.springframework.hateoas.RepresentationModel;
-
 import java.util.List;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@JsonPropertyOrder({"id_skill", "name", "category", "level", "progress_history", "goals", "_links"})
+@JsonPropertyOrder({"id_skill", "name", "category_id", "level", "progress_history", "goals", "_links"})
 public class SkillResponseDTO extends RepresentationModel<SkillResponseDTO> {
 
     @JsonProperty("id_skill")
@@ -19,9 +19,10 @@ public class SkillResponseDTO extends RepresentationModel<SkillResponseDTO> {
 
     private String name;
 
-    private Long category;
+    @JsonProperty("category_id")
+    private Long categoryId;
 
-    private Integer level;
+    private SkillLevel level;
 
     @JsonProperty("progress_history")
     private List<ProgressResponseDTO> progressHistory;
