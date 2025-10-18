@@ -1,5 +1,6 @@
 package br.com.fiap.skilltrack_backend_java.skilltrack.controller;
 
+import br.com.fiap.skilltrack_backend_java.skilltrack.dto.GoalRequestDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.GoalResponseDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.service.GoalService;
 import jakarta.validation.Valid;
@@ -37,7 +38,7 @@ public class GoalController {
     }
 
     @PostMapping
-    public ResponseEntity<GoalResponseDTO> salvar(@RequestBody @Valid com.skilltrack.dto.GoalRequestDTO dto, UriComponentsBuilder uriBuilder) {
+    public ResponseEntity<GoalResponseDTO> salvar(@RequestBody @Valid GoalRequestDTO dto, UriComponentsBuilder uriBuilder) {
         var goal = goalService.salvar(dto);
         adicionarLinks(goal);
         var uri = uriBuilder.path("/goals/{id}").buildAndExpand(goal.getId()).toUri();
@@ -45,7 +46,7 @@ public class GoalController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<GoalResponseDTO> atualizar(@PathVariable Long id, @RequestBody @Valid com.skilltrack.dto.GoalRequestDTO dto) {
+    public ResponseEntity<GoalResponseDTO> atualizar(@PathVariable Long id, @RequestBody @Valid GoalRequestDTO dto) {
         var atualizado = goalService.atualizar(id, dto);
         adicionarLinks(atualizado);
         return ResponseEntity.ok(atualizado);
