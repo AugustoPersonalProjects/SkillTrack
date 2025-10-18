@@ -1,5 +1,6 @@
 package br.com.fiap.skilltrack_backend_java.skilltrack.service;
 
+import br.com.fiap.skilltrack_backend_java.skilltrack.dto.GoalRequestDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.GoalResponseDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.mapper.GoalMapper;
 import br.com.fiap.skilltrack_backend_java.skilltrack.model.Goal;
@@ -37,7 +38,7 @@ public class GoalService {
     }
 
     @Transactional
-    public GoalResponseDTO salvar(com.skilltrack.dto.GoalRequestDTO dto) {
+    public GoalResponseDTO salvar(GoalRequestDTO dto) {
         // valida deadline
         if (dto.getDeadline() != null && dto.getDeadline().isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("Deadline deve ser uma data futura");
@@ -52,7 +53,7 @@ public class GoalService {
     }
 
     @Transactional
-    public GoalResponseDTO atualizar(Long id, com.skilltrack.dto.GoalRequestDTO dto) {
+    public GoalResponseDTO atualizar(Long id, GoalRequestDTO dto) {
         var goalAtual = goalRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Goal com id: " + id + " não encontrada"));
 

@@ -4,7 +4,6 @@ import br.com.fiap.skilltrack_backend_java.skilltrack.model.enums.SkillLevel;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.util.List;
 
 @Entity
@@ -28,8 +27,8 @@ public class Skill {
     @Column(length = 255)
     private String description;
 
+    @Column(name = "SKILL_LEVEL")
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
     private SkillLevel level;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -42,4 +41,7 @@ public class Skill {
 
     @OneToMany(mappedBy = "skill", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Progress> progresses;
+
+    @OneToMany(mappedBy = "skill", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Goal> goals;
 }

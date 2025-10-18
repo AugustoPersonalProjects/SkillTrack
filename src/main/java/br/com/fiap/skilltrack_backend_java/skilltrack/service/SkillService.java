@@ -4,8 +4,10 @@ import br.com.fiap.skilltrack_backend_java.skilltrack.dto.SkillRequestDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.SkillResponseDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.mapper.SkillMapper;
 import br.com.fiap.skilltrack_backend_java.skilltrack.model.Skill;
+import br.com.fiap.skilltrack_backend_java.skilltrack.model.Category;
 import br.com.fiap.skilltrack_backend_java.skilltrack.repository.SkillRepository;
 import br.com.fiap.skilltrack_backend_java.skilltrack.repository.UsuarioRepository;
+import br.com.fiap.skilltrack_backend_java.skilltrack.repository.CategoryRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -22,6 +24,9 @@ public class SkillService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    @Autowired
+    private CategoryRepository categoryRepository;
+
     @Transactional(readOnly = true)
     public Page<SkillResponseDTO> listarTodos(Pageable pageable) {
         return skillRepository.findAllByOrderByIdAsc(pageable)
@@ -36,9 +41,14 @@ public class SkillService {
 
     @Transactional
     public SkillResponseDTO salvar(SkillRequestDTO dto) {
-        var skill = SkillMapper.toEntity(dto);
+        // Buscar categoria pelo ID informado
+        Category category = categoryRepository.findById(dto.getCategoryId())
+                .orElseThrow(() -> new EntityNotFoundException("Categoria com id: " + dto.getCategoryId() + " não encontrada"));
 
-        // Associate user
+        // Converter DTO → Entidade
+        var skill = SkillMapper.toEntity(dto, category);
+
+        // Associar usuário
         var usuario = usuarioRepository.findById(dto.getUserId())
                 .orElseThrow(() -> new EntityNotFoundException("Usuário com id: " + dto.getUserId() + " não encontrado"));
         skill.setUser(usuario);
@@ -51,9 +61,14 @@ public class SkillService {
     public SkillResponseDTO atualizar(Long id, SkillRequestDTO dto) {
         var skillAtual = buscarEntidadeSkillPorId(id);
 
+        // Atualiza os campos simples
         skillAtual.setName(dto.getName());
-        skillAtual.setCategory(dto.getCategory());
         skillAtual.setLevel(dto.getLevel());
+
+        // Atualiza a categoria
+        Category novaCategoria = categoryRepository.findById(dto.getCategoryId())
+                .orElseThrow(() -> new EntityNotFoundException("Categoria com id: " + dto.getCategoryId() + " não encontrada"));
+        skillAtual.setCategory(novaCategoria);
 
         var atualizado = skillRepository.save(skillAtual);
         return SkillMapper.toResponseDTO(atualizado);
