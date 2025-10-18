@@ -1,6 +1,6 @@
 package br.com.fiap.skilltrack_backend_java.skilltrack.security;
 
-import br.com.fiap.skilltrack_backend_java.skilltrack.respository.UsuarioRepository;
+import br.com.fiap.skilltrack_backend_java.skilltrack.repository.UsuarioRepository;
 import br.com.fiap.skilltrack_backend_java.skilltrack.service.TokenService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
