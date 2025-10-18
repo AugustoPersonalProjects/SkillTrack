@@ -1,4 +1,4 @@
-package br.com.fiap.skilltrack_backend_java.skilltrack.respository;
+package br.com.fiap.skilltrack_backend_java.skilltrack.repository;
 
 import br.com.fiap.skilltrack_backend_java.skilltrack.model.Usuario;
 import org.springframework.data.domain.Page;
@@ -9,8 +9,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
-
     Page<Usuario> findAllByOrderByIdAsc(Pageable pageable);
-
     UserDetails findByEmail(String email);
 }

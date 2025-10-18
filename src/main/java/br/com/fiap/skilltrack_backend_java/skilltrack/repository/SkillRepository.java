@@ -1,4 +1,4 @@
-package br.com.fiap.skilltrack_backend_java.skilltrack.respository;
+package br.com.fiap.skilltrack_backend_java.skilltrack.repository;
 
 import br.com.fiap.skilltrack_backend_java.skilltrack.model.Skill;
 import org.springframework.data.domain.Page;

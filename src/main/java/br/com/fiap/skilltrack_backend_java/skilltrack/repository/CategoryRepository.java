@@ -1,4 +1,4 @@
-package br.com.fiap.skilltrack_backend_java.skilltrack.respository;
+package br.com.fiap.skilltrack_backend_java.skilltrack.repository;
 
 import br.com.fiap.skilltrack_backend_java.skilltrack.model.Category;
 import org.springframework.data.domain.Page;
@@ -8,6 +8,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, Long> {
-
     Page<Category> findAllByOrderByIdAsc(Pageable pageable);
 }

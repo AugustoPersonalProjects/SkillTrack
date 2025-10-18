@@ -1,4 +1,4 @@
-package br.com.fiap.skilltrack_backend_java.skilltrack.respository;
+package br.com.fiap.skilltrack_backend_java.skilltrack.repository;
 
 import br.com.fiap.skilltrack_backend_java.skilltrack.model.Progress;
 import org.springframework.data.domain.Page;
@@ -10,10 +10,6 @@ import java.util.List;
 
 @Repository
 public interface ProgressRepository extends JpaRepository<Progress, Long> {
-
     Page<Progress> findAllByOrderByIdAsc(Pageable pageable);
-
     List<Progress> findBySkillIdOrderByDateAsc(Long skillId);
-
-    List<Progress> findByUserId(Long userId);
 }
