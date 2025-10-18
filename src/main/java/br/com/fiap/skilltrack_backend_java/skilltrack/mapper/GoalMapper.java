@@ -1,9 +1,9 @@
 package br.com.fiap.skilltrack_backend_java.skilltrack.mapper;
 
+import br.com.fiap.skilltrack_backend_java.skilltrack.dto.GoalRequestDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.GoalResponseDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.model.Goal;
 import br.com.fiap.skilltrack_backend_java.skilltrack.model.Skill;
-import com.skilltrack.dto.GoalRequestDTO;
 
 public class GoalMapper {
 

@@ -13,7 +13,6 @@ public class UsuarioMapper {
                 usuario.getId(),
                 usuario.getNome(),
                 usuario.getEmail(),
-                usuario.getSenha(),
                 usuario.getPerfil(),
                 usuario.getDataCriacao()
         );
@@ -30,4 +29,3 @@ public class UsuarioMapper {
         return usuario;
     }
 }
-
