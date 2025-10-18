@@ -1,6 +1,6 @@
 package br.com.fiap.skilltrack_backend_java.skilltrack.service;
 
-import br.com.fiap.skilltrack_backend_java.skilltrack.respository.UsuarioRepository;
+import br.com.fiap.skilltrack_backend_java.skilltrack.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
