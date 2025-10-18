@@ -27,6 +27,7 @@ public class ProgressMapper {
         Progress progress = new Progress();
         progress.setSkill(skill);
         progress.setPercentage(dto.getPercentage());
+        progress.setDate(dto.getDate());
 
         return progress;
     }
