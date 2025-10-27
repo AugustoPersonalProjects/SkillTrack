@@ -21,7 +21,7 @@ public class Progress {
     @JsonProperty("id_progress")
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "date_progress")
     private LocalDate date;
 
     @Column(nullable = false)

@@ -12,4 +12,6 @@ import java.util.List;
 public interface GoalRepository extends JpaRepository<Goal, Long> {
     Page<Goal> findAllByOrderByIdAsc(Pageable pageable);
     List<Goal> findBySkillIdOrderByDeadlineAsc(Long skillId);
+    List<Goal> findTop5ByOrderByDeadlineAsc();
+
 }

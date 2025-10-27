@@ -7,7 +7,7 @@ import lombok.*;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "st_goals")
+@Table(name = "ST_GOALS")
 @Getter
 @Setter
 @AllArgsConstructor
@@ -40,4 +40,12 @@ public class Goal {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "skill_id")
     private Skill skill;
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.title == null && this.description != null) {
+            this.title = this.description.length() > 150 ?
+                    this.description.substring(0, 147) + "..." : this.description;
+        }
+    }
 }
