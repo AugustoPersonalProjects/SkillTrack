@@ -10,16 +10,23 @@ import java.time.LocalDate;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@JsonPropertyOrder({"id_goal", "description", "deadline", "skill_id", "_links"})
+@JsonPropertyOrder({"id_goal", "title", "description", "deadline", "completed", "skill_id", "user_id", "_links"})
 public class GoalResponseDTO extends RepresentationModel<GoalResponseDTO> {
 
     @JsonProperty("id_goal")
     private Long id;
 
+    private String title;
+
     private String description;
 
     private LocalDate deadline;
 
+    private boolean completed;
+
     @JsonProperty("skill_id")
     private Long skillId;
+
+    @JsonProperty("user_id")
+    private Long userId;
 }

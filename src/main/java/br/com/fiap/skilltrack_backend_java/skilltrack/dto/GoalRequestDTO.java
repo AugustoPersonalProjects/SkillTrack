@@ -22,4 +22,8 @@ public class GoalRequestDTO {
     @JsonProperty("skill_id")
     @NotNull(message = "O ID da habilidade é obrigatório")
     private Long skillId;
+
+    @JsonProperty("user_id")
+    @NotNull(message = "O ID do usuário é obrigatório")
+    private Long userId;
 }
