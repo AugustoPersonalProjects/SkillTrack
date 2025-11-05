@@ -8,9 +8,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import java.util.List;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -70,5 +73,18 @@ public class GoalController {
         dto.add(linkTo(methodOn(GoalController.class).deletar(dto.getId())).withRel("delete"));
         dto.add(linkTo(methodOn(GoalController.class).marcarComoCompleta(dto.getId())).withRel("complete"));
         return dto;
+    }
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<GoalResponseDTO>> buscarPorUsuario(@PathVariable Long userId) {
+        try {
+            System.out.println("Buscando metas para usuário: " + userId);
+            var goals = goalService.buscarPorUsuario(userId);
+            goals.forEach(this::adicionarLinks);
+            System.out.println("Metas encontradas: " + goals.size());
+            return ResponseEntity.ok(goals);
+        } catch (Exception e) {
+            System.out.println("Erro ao buscar metas por usuário: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }
