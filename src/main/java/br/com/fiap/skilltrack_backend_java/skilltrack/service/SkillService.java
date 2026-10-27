@@ -15,6 +15,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 public class SkillService {
 
@@ -37,6 +39,13 @@ public class SkillService {
     public SkillResponseDTO buscarPorId(Long id) {
         var skill = buscarEntidadeSkillPorId(id);
         return SkillMapper.toResponseDTO(skill);
+    }
+
+    @Transactional(readOnly = true)
+    public List<SkillResponseDTO> listarPorUsuario(Long userId) {
+        return skillRepository.findByUserIdOrderByNameAsc(userId).stream()
+                .map(SkillMapper::toResponseDTO)
+                .toList();
     }
 
     @Transactional
@@ -63,6 +72,7 @@ public class SkillService {
 
         // Atualiza os campos simples
         skillAtual.setName(dto.getName());
+        skillAtual.setDescription(dto.getDescription());
         skillAtual.setLevel(dto.getLevel());
 
         // Atualiza a categoria

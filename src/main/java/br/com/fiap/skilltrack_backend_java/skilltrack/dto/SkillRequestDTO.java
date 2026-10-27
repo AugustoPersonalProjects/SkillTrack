@@ -16,6 +16,9 @@ public class SkillRequestDTO {
     @Size(max = 100)
     private String name;
 
+    @Size(max = 255)
+    private String description;
+
     @NotNull(message = "O ID da categoria é obrigatório")
     private Long categoryId;
 

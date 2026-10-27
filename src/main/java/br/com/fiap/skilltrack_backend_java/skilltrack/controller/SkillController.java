@@ -13,6 +13,8 @@ import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
 @RestController
@@ -50,6 +52,11 @@ public class SkillController {
         model.add(linkTo(methodOn(SkillController.class).listarTodos(Pageable.unpaged())).withRel("all-skills"));
 
         return ResponseEntity.ok(model);
+    }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<SkillResponseDTO>> listarPorUsuario(@PathVariable Long userId) {
+        return ResponseEntity.ok(skillService.listarPorUsuario(userId));
     }
 
     @PostMapping

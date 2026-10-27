@@ -11,13 +11,15 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@JsonPropertyOrder({"id_skill", "name", "category_id", "level", "progress_history", "goals", "_links"})
+@JsonPropertyOrder({"id_skill", "name", "description", "category_id", "level", "progress_history", "goals", "_links"})
 public class SkillResponseDTO extends RepresentationModel<SkillResponseDTO> {
 
     @JsonProperty("id_skill")
     private Long id;
 
     private String name;
+
+    private String description;
 
     @JsonProperty("category_id")
     private Long categoryId;

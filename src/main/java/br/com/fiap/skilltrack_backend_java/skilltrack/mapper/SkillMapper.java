@@ -30,6 +30,7 @@ public class SkillMapper {
         return new SkillResponseDTO(
                 skill.getId(),
                 skill.getName(),
+                skill.getDescription(),
                 categoryId,
                 skill.getLevel(),
                 progressHistoryDTO,
@@ -42,6 +43,7 @@ public class SkillMapper {
 
         Skill skill = new Skill();
         skill.setName(dto.getName());
+        skill.setDescription(dto.getDescription());
         skill.setLevel(dto.getLevel());
         skill.setCategory(category);
 
