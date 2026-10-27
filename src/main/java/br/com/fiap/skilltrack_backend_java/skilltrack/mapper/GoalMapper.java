@@ -29,8 +29,8 @@ public class GoalMapper {
         if (dto == null) return null;
 
         Goal goal = new Goal();
-        goal.setTitle(dto.getDescription());
-        goal.setDescription(dto.getDescription());
+        goal.setTitle(dto.getTituloEfetivo());
+        goal.setDescription(dto.getDescricaoEfetiva());
         goal.setDeadline(dto.getDeadline());
         goal.setSkill(skill);
         goal.setUser(usuario);

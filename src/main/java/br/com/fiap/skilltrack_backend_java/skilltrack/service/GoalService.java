@@ -69,8 +69,8 @@ public class GoalService {
             throw new IllegalArgumentException("Deadline deve ser uma data futura");
         }
 
-        goalAtual.setTitle(dto.getDescription());
-        goalAtual.setDescription(dto.getDescription());
+        goalAtual.setTitle(dto.getTituloEfetivo());
+        goalAtual.setDescription(dto.getDescricaoEfetiva());
         goalAtual.setDeadline(dto.getDeadline());
 
         var usuarioAtualId = goalAtual.getUser() != null ? goalAtual.getUser().getId() : null;
