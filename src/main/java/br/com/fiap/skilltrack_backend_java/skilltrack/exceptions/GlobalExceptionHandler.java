@@ -1,6 +1,8 @@
 package br.com.fiap.skilltrack_backend_java.skilltrack.exceptions;
 
 import org.apache.coyote.BadRequestException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
@@ -8,6 +10,8 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -18,6 +22,8 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     // 404 - Recurso não encontrado
     @ExceptionHandler(EntityNotFoundException.class)
@@ -42,15 +48,13 @@ public class GlobalExceptionHandler {
     // 409 - Email já cadastrado
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<?> tratarDuplicidade(DataIntegrityViolationException ex) {
-        String msg = ex.getMostSpecificCause().getMessage();
+        String msg = String.valueOf(ex.getMostSpecificCause().getMessage()).toLowerCase();
         String detalhe;
 
-        if (msg.contains("EMAIL_UNIQUE")) {
+        if (msg.contains("st_usuarios_email_uq")) {
             detalhe = "Já existe um usuário cadastrado com este e-mail.";
-        } else if (msg.contains("PLACA_UNIQUE")) {
-            detalhe = "Já existe uma moto cadastrada com esta placa.";
-        } else if (msg.contains("CHASSI_UNIQUE")) {
-            detalhe = "Já existe uma moto cadastrada com este chassi.";
+        } else if (msg.contains("st_skills_category_fk")) {
+            detalhe = "A categoria possui habilidades vinculadas e não pode ser removida.";
         } else {
             detalhe = "Violação de integridade no banco de dados.";
         }
@@ -88,11 +92,37 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<?> tratarArgumentoInvalido(IllegalArgumentException ex) {
+        return ResponseEntity.badRequest().body(Map.of(
+                "error", "Requisição inválida",
+                "message", ex.getMessage()
+        ));
+    }
+
+    // 401 - E-mail/senha incorretos
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<?> tratarErroAutenticacao(AuthenticationException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                "error", "Não autorizado",
+                "message", "E-mail ou senha inválidos."
+        ));
+    }
+
+    // 403 - Sem permissão
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<?> tratarAcessoNegado(AccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                "error", "Acesso negado",
+                "message", "Você não tem permissão para acessar este recurso."
+        ));
+    }
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<?> tratarErroDeConversao(HttpMessageNotReadableException ex) {
         Throwable causa = ex.getCause();
 
-        if (causa instanceof InvalidFormatException ife) {
+        if (causa instanceof InvalidFormatException ife && !ife.getPath().isEmpty()) {
             String nomeCampo = ife.getPath().get(0).getFieldName();
             return ResponseEntity.badRequest().body(Map.of(
                     "error", "Requisição inválida",
@@ -119,6 +149,7 @@ public class GlobalExceptionHandler {
     // 500 - Erro genérico inesperado
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> tratarErro500(Exception ex) {
+        log.error("Erro inesperado", ex);
         var body = Map.of(
                 "error", "Erro interno do servidor",
                 "message", "Ocorreu um erro inesperado."

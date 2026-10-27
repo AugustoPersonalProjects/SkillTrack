@@ -16,11 +16,9 @@ public interface ProgressRepository extends JpaRepository<Progress, Long> {
     @Query("SELECT AVG(p.percentage) FROM Progress p")
     Double findAverageProgress();
 
-    @Query("SELECT s.name FROM Skill s")
-    List<String> findSkillNames();
-
-    @Query("SELECT AVG(p.percentage) FROM Progress p GROUP BY p.skill.name")
-    List<Double> findProgressBySkill();
+    // nome da skill + média de progresso, na mesma ordem (skills sem progresso aparecem com 0)
+    @Query("SELECT s.name, COALESCE(AVG(p.percentage), 0) FROM Skill s LEFT JOIN s.progresses p GROUP BY s.id, s.name ORDER BY s.name")
+    List<Object[]> findAverageProgressBySkill();
 
     List<Progress> findTop5ByOrderByDateDesc();
 

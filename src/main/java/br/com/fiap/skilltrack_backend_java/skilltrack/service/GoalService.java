@@ -16,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class GoalService {
@@ -74,10 +73,18 @@ public class GoalService {
         goalAtual.setDescription(dto.getDescription());
         goalAtual.setDeadline(dto.getDeadline());
 
-        if (dto.getUserId() != null && !dto.getUserId().equals(goalAtual.getUser().getId())) {
+        var usuarioAtualId = goalAtual.getUser() != null ? goalAtual.getUser().getId() : null;
+        if (dto.getUserId() != null && !dto.getUserId().equals(usuarioAtualId)) {
             var novoUsuario = usuarioRepository.findById(dto.getUserId())
                     .orElseThrow(() -> new EntityNotFoundException("Usuário com id: " + dto.getUserId() + " não encontrado"));
             goalAtual.setUser(novoUsuario);
+        }
+
+        var skillAtualId = goalAtual.getSkill() != null ? goalAtual.getSkill().getId() : null;
+        if (dto.getSkillId() != null && !dto.getSkillId().equals(skillAtualId)) {
+            var novaSkill = skillRepository.findById(dto.getSkillId())
+                    .orElseThrow(() -> new EntityNotFoundException("Skill com id: " + dto.getSkillId() + " não encontrada"));
+            goalAtual.setSkill(novaSkill);
         }
 
         var atualizado = goalRepository.save(goalAtual);
@@ -86,17 +93,9 @@ public class GoalService {
 
     @Transactional(readOnly = true)
     public List<GoalResponseDTO> buscarPorUsuario(Long userId) {
-        System.out.println("Buscando metas no banco para usuário: " + userId);
-
-        var goals = goalRepository.findByUserId(userId);
-        System.out.println("Metas encontradas no banco: " + goals.size());
-
-        var result = goals.stream()
+        return goalRepository.findByUserId(userId).stream()
                 .map(GoalMapper::toResponseDTO)
-                .collect(Collectors.toList());
-
-        System.out.println("Metas convertidas para DTO: " + result.size());
-        return result;
+                .toList();
     }
 
     @Transactional
