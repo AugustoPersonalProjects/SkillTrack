@@ -15,8 +15,7 @@ import java.util.List;
 public class Skill {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "skill_seq")
-    @SequenceGenerator(name = "skill_seq", sequenceName = "SEQ_ST_SKILLS", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_skill")
     @JsonProperty("id_skill")
     private Long id;
@@ -27,7 +26,7 @@ public class Skill {
     @Column(length = 255)
     private String description;
 
-    @Column(name = "SKILL_LEVEL")
+    @Column(name = "skill_level", nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     private SkillLevel level;
 

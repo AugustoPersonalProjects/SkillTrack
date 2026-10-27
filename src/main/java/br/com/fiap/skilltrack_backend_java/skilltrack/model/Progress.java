@@ -15,8 +15,7 @@ import java.time.LocalDate;
 public class Progress {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "progress_seq")
-    @SequenceGenerator(name = "progress_seq", sequenceName = "SEQ_ST_PROGRESS", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_progress")
     @JsonProperty("id_progress")
     private Long id;
