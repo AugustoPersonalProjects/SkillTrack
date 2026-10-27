@@ -3,7 +3,6 @@ package br.com.fiap.skilltrack_backend_java.skilltrack.dto;
 import br.com.fiap.skilltrack_backend_java.skilltrack.model.enums.Perfil;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
@@ -26,6 +25,6 @@ public class UsuarioRequestDTO {
     @Size(min = 6, max = 150)
     private String senha;
 
-    @NotNull(message = "O perfil do usuário é obrigatório")
+    // opcional: só é respeitado quando quem faz a requisição é ADMIN (padrão: USER)
     private Perfil perfil;
 }

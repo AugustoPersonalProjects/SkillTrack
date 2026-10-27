@@ -2,11 +2,14 @@ package br.com.fiap.skilltrack_backend_java.skilltrack.service;
 
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.UsuarioRequestDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.UsuarioResponseDTO;
+import br.com.fiap.skilltrack_backend_java.skilltrack.exceptions.RegraNegocioException;
 import br.com.fiap.skilltrack_backend_java.skilltrack.mapper.UsuarioMapper;
 import br.com.fiap.skilltrack_backend_java.skilltrack.model.Usuario;
+import br.com.fiap.skilltrack_backend_java.skilltrack.model.enums.Perfil;
 import br.com.fiap.skilltrack_backend_java.skilltrack.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,24 +39,36 @@ public class UsuarioService {
 
     @Transactional
     public UsuarioResponseDTO salvar(UsuarioRequestDTO usuarioRequestDTO) {
+        return UsuarioMapper.toResponseDTO(cadastrar(usuarioRequestDTO));
+    }
+
+    @Transactional
+    public Usuario cadastrar(UsuarioRequestDTO usuarioRequestDTO) {
+        validarEmailDisponivel(usuarioRequestDTO.getEmail(), null);
+
         var usuario = UsuarioMapper.toEntity(usuarioRequestDTO);
-
         usuario.setSenha(passwordEncoder.encode(usuarioRequestDTO.getSenha()));
+        // somente um ADMIN pode definir o perfil; cadastro público é sempre USER
+        usuario.setPerfil(usuarioLogadoEhAdmin() && usuarioRequestDTO.getPerfil() != null
+                ? usuarioRequestDTO.getPerfil()
+                : Perfil.USER);
 
-        var usuarioSalvo = usuarioRepository.save(usuario);
-        return UsuarioMapper.toResponseDTO(usuarioSalvo);
+        return usuarioRepository.save(usuario);
     }
 
     @Transactional
     public UsuarioResponseDTO atualizar(Long id, UsuarioRequestDTO usuarioRequestDTO) {
         var usuarioAtual = buscarEntidadeUsuarioPorId(id);
+        validarEmailDisponivel(usuarioRequestDTO.getEmail(), id);
 
         usuarioAtual.setNome(usuarioRequestDTO.getNome());
         usuarioAtual.setEmail(usuarioRequestDTO.getEmail());
         if (usuarioRequestDTO.getSenha() != null && !usuarioRequestDTO.getSenha().isBlank()) {
             usuarioAtual.setSenha(passwordEncoder.encode(usuarioRequestDTO.getSenha()));
         }
-        usuarioAtual.setPerfil(usuarioRequestDTO.getPerfil());
+        if (usuarioLogadoEhAdmin() && usuarioRequestDTO.getPerfil() != null) {
+            usuarioAtual.setPerfil(usuarioRequestDTO.getPerfil());
+        }
 
         var usuarioAtualizado = usuarioRepository.save(usuarioAtual);
         return UsuarioMapper.toResponseDTO(usuarioAtualizado);
@@ -68,5 +83,19 @@ public class UsuarioService {
     public Usuario buscarEntidadeUsuarioPorId(Long id) {
         return usuarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário com id: " + id + " não encontrado"));
+    }
+
+    private void validarEmailDisponivel(String email, Long idUsuarioAtual) {
+        usuarioRepository.findByEmail(email)
+                .filter(existente -> !existente.getId().equals(idUsuarioAtual))
+                .ifPresent(existente -> {
+                    throw new RegraNegocioException("E-mail já cadastrado.");
+                });
+    }
+
+    private boolean usuarioLogadoEhAdmin() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_" + Perfil.ADMIN.name()));
     }
 }

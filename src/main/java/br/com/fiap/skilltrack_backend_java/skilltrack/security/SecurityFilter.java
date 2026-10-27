@@ -30,8 +30,10 @@ public class SecurityFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         var tokenJWT = recuperarToken(request);
-        if (tokenJWT != null) {
-            var subject = tokenService.getSubject(tokenJWT);
+        // token inválido/expirado não deve derrubar a requisição: segue sem autenticação
+        // (rotas públicas como /auth/login continuam funcionando; as protegidas retornam 401)
+        var subject = tokenJWT != null ? tokenService.getSubjectOrNull(tokenJWT) : null;
+        if (subject != null) {
             var usuarioOptional = repository.findByEmail(subject);
 
             if (usuarioOptional.isPresent()) {

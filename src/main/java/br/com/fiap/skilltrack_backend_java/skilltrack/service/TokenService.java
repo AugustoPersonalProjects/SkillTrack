@@ -9,11 +9,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 
 @Service
 public class TokenService {
+
+    private static final String ISSUER = "API SkillTrack";
 
     @Value("${api.security.token.secret}")
     private String secret;
@@ -22,7 +23,7 @@ public class TokenService {
         try {
             var algoritmo = Algorithm.HMAC256(secret);
             return JWT.create()
-                    .withIssuer("API LifeBoard")
+                    .withIssuer(ISSUER)
                     .withSubject(usuario.getEmail())
                     .withClaim("id", usuario.getId())
                     .withExpiresAt(dataExpiracao())
@@ -36,7 +37,7 @@ public class TokenService {
         try {
             var algoritmo = Algorithm.HMAC256(secret);
             return JWT.require(algoritmo)
-                    .withIssuer("API LifeBoard")
+                    .withIssuer(ISSUER)
                     .build()
                     .verify(tokenJWT)
                     .getSubject();
@@ -46,8 +47,16 @@ public class TokenService {
         }
     }
 
+    public String getSubjectOrNull(String tokenJWT) {
+        try {
+            return getSubject(tokenJWT);
+        } catch (RuntimeException exception) {
+            return null;
+        }
+    }
+
     private Instant dataExpiracao() {
-        return LocalDateTime.now().plusDays(7).toInstant(ZoneOffset.of("-03:00"));
+        return Instant.now().plus(7, ChronoUnit.DAYS);
     }
 
 }

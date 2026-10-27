@@ -1,3 +1,5 @@
 package br.com.fiap.skilltrack_backend_java.skilltrack.dto;
 
-public record AutenticacaoDTO(String email, String senha) {}
+import jakarta.validation.constraints.NotBlank;
+
+public record AutenticacaoDTO(@NotBlank String email, @NotBlank String senha) {}
