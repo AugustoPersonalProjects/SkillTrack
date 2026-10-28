@@ -22,17 +22,20 @@ public class ProgressService {
     @Autowired
     private SkillRepository skillRepository;
 
+    @Autowired
+    private AutorizacaoService autorizacaoService;
+
     @Transactional(readOnly = true)
     public Page<ProgressResponseDTO> listarTodos(Pageable pageable) {
-        return progressRepository.findAllByOrderByIdAsc(pageable)
-                .map(ProgressMapper::toResponseDTO);
+        var progressos = autorizacaoService.isAdmin()
+                ? progressRepository.findAllByOrderByIdAsc(pageable)
+                : progressRepository.findBySkillUserIdOrderByIdAsc(autorizacaoService.getIdUsuarioLogado(), pageable);
+        return progressos.map(ProgressMapper::toResponseDTO);
     }
 
     @Transactional(readOnly = true)
     public ProgressResponseDTO buscarPorId(Long id) {
-        var progress = progressRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Progress com id: " + id + " não encontrado"));
-        return ProgressMapper.toResponseDTO(progress);
+        return ProgressMapper.toResponseDTO(buscarEntidadeProgressPorId(id));
     }
 
     @Transactional
@@ -43,6 +46,7 @@ public class ProgressService {
 
         var skill = skillRepository.findById(dto.getSkillId())
                 .orElseThrow(() -> new EntityNotFoundException("Skill com id: " + dto.getSkillId() + " não encontrada"));
+        autorizacaoService.verificarDono(skill.getUser());
 
         Progress progress = ProgressMapper.toEntity(dto, skill);
         var salvo = progressRepository.save(progress);
@@ -51,8 +55,7 @@ public class ProgressService {
 
     @Transactional
     public ProgressResponseDTO atualizar(Long id, ProgressRequestDTO dto) {
-        var existente = progressRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Progress com id: " + id + " não encontrado"));
+        var existente = buscarEntidadeProgressPorId(id);
 
         if (dto.getPercentage() < 0 || dto.getPercentage() > 100) {
             throw new IllegalArgumentException("Porcentagem precisa estar entre 0 e 100");
@@ -65,8 +68,14 @@ public class ProgressService {
 
     @Transactional
     public void deletar(Long id) {
-        var existente = progressRepository.findById(id)
+        progressRepository.delete(buscarEntidadeProgressPorId(id));
+    }
+
+    // busca o progresso e garante que a skill dele pertence ao usuário logado
+    private Progress buscarEntidadeProgressPorId(Long id) {
+        var progress = progressRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Progress com id: " + id + " não encontrado"));
-        progressRepository.delete(existente);
+        autorizacaoService.verificarDono(progress.getSkill() != null ? progress.getSkill().getUser() : null);
+        return progress;
     }
 }

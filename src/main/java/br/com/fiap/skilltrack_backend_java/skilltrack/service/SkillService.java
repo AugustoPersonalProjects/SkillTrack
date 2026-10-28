@@ -29,10 +29,15 @@ public class SkillService {
     @Autowired
     private CategoryRepository categoryRepository;
 
+    @Autowired
+    private AutorizacaoService autorizacaoService;
+
     @Transactional(readOnly = true)
     public Page<SkillResponseDTO> listarTodos(Pageable pageable) {
-        return skillRepository.findAllByOrderByIdAsc(pageable)
-                .map(SkillMapper::toResponseDTO);
+        var skills = autorizacaoService.isAdmin()
+                ? skillRepository.findAllByOrderByIdAsc(pageable)
+                : skillRepository.findByUserIdOrderByIdAsc(autorizacaoService.getIdUsuarioLogado(), pageable);
+        return skills.map(SkillMapper::toResponseDTO);
     }
 
     @Transactional(readOnly = true)
@@ -43,6 +48,7 @@ public class SkillService {
 
     @Transactional(readOnly = true)
     public List<SkillResponseDTO> listarPorUsuario(Long userId) {
+        autorizacaoService.verificarDono(userId);
         return skillRepository.findByUserIdOrderByNameAsc(userId).stream()
                 .map(SkillMapper::toResponseDTO)
                 .toList();
@@ -50,6 +56,8 @@ public class SkillService {
 
     @Transactional
     public SkillResponseDTO salvar(SkillRequestDTO dto) {
+        autorizacaoService.verificarDono(dto.getUserId());
+
         // Buscar categoria pelo ID informado
         Category category = categoryRepository.findById(dto.getCategoryId())
                 .orElseThrow(() -> new EntityNotFoundException("Categoria com id: " + dto.getCategoryId() + " não encontrada"));
@@ -90,8 +98,11 @@ public class SkillService {
         skillRepository.delete(skill);
     }
 
+    // busca a skill e garante que ela pertence ao usuário logado
     public Skill buscarEntidadeSkillPorId(Long id) {
-        return skillRepository.findById(id)
+        var skill = skillRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Skill com id: " + id + " não encontrada"));
+        autorizacaoService.verificarDono(skill.getUser());
+        return skill;
     }
 }

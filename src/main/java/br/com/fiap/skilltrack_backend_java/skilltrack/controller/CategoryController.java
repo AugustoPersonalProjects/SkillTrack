@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
@@ -36,6 +37,7 @@ public class CategoryController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CategoryResponseDTO> salvar(@RequestBody @Valid CategoryRequestDTO dto, UriComponentsBuilder uriBuilder) {
         var salvo = categoryService.salvar(dto);
         adicionarLinks(salvo);
@@ -44,6 +46,7 @@ public class CategoryController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CategoryResponseDTO> atualizar(@PathVariable Long id, @RequestBody @Valid CategoryRequestDTO dto) {
         var atualizado = categoryService.atualizar(id, dto);
         adicionarLinks(atualizado);
@@ -51,6 +54,7 @@ public class CategoryController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         categoryService.deletar(id);
         return ResponseEntity.noContent().build();

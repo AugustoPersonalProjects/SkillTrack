@@ -28,17 +28,20 @@ public class GoalService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    @Autowired
+    private AutorizacaoService autorizacaoService;
+
     @Transactional(readOnly = true)
     public Page<GoalResponseDTO> listarTodos(Pageable pageable) {
-        return goalRepository.findAllByOrderByIdAsc(pageable)
-                .map(GoalMapper::toResponseDTO);
+        var goals = autorizacaoService.isAdmin()
+                ? goalRepository.findAllByOrderByIdAsc(pageable)
+                : goalRepository.findByUserIdOrderByIdAsc(autorizacaoService.getIdUsuarioLogado(), pageable);
+        return goals.map(GoalMapper::toResponseDTO);
     }
 
     @Transactional(readOnly = true)
     public GoalResponseDTO buscarPorId(Long id) {
-        var goal = goalRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Goal com id: " + id + " não encontrada"));
-        return GoalMapper.toResponseDTO(goal);
+        return GoalMapper.toResponseDTO(buscarEntidadeGoalPorId(id));
     }
 
     @Transactional
@@ -48,8 +51,11 @@ public class GoalService {
             throw new IllegalArgumentException("Deadline deve ser uma data futura");
         }
 
+        autorizacaoService.verificarDono(dto.getUserId());
+
         var skill = skillRepository.findById(dto.getSkillId())
                 .orElseThrow(() -> new EntityNotFoundException("Skill com id: " + dto.getSkillId() + " não encontrada"));
+        autorizacaoService.verificarDono(skill.getUser());
 
         var usuario = usuarioRepository.findById(dto.getUserId())
                 .orElseThrow(() -> new EntityNotFoundException("Usuário com id: " + dto.getUserId() + " não encontrado"));
@@ -62,8 +68,7 @@ public class GoalService {
 
     @Transactional
     public GoalResponseDTO atualizar(Long id, GoalRequestDTO dto) {
-        var goalAtual = goalRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Goal com id: " + id + " não encontrada"));
+        var goalAtual = buscarEntidadeGoalPorId(id);
 
         if (dto.getDeadline() != null && dto.getDeadline().isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("Deadline deve ser uma data futura");
@@ -75,6 +80,7 @@ public class GoalService {
 
         var usuarioAtualId = goalAtual.getUser() != null ? goalAtual.getUser().getId() : null;
         if (dto.getUserId() != null && !dto.getUserId().equals(usuarioAtualId)) {
+            autorizacaoService.verificarDono(dto.getUserId());
             var novoUsuario = usuarioRepository.findById(dto.getUserId())
                     .orElseThrow(() -> new EntityNotFoundException("Usuário com id: " + dto.getUserId() + " não encontrado"));
             goalAtual.setUser(novoUsuario);
@@ -84,6 +90,7 @@ public class GoalService {
         if (dto.getSkillId() != null && !dto.getSkillId().equals(skillAtualId)) {
             var novaSkill = skillRepository.findById(dto.getSkillId())
                     .orElseThrow(() -> new EntityNotFoundException("Skill com id: " + dto.getSkillId() + " não encontrada"));
+            autorizacaoService.verificarDono(novaSkill.getUser());
             goalAtual.setSkill(novaSkill);
         }
 
@@ -93,6 +100,7 @@ public class GoalService {
 
     @Transactional(readOnly = true)
     public List<GoalResponseDTO> buscarPorUsuario(Long userId) {
+        autorizacaoService.verificarDono(userId);
         return goalRepository.findByUserId(userId).stream()
                 .map(GoalMapper::toResponseDTO)
                 .toList();
@@ -100,16 +108,23 @@ public class GoalService {
 
     @Transactional
     public void deletar(Long id) {
-        var goal = goalRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Goal com id: " + id + " não encontrada"));
-        goalRepository.delete(goal);
+        goalRepository.delete(buscarEntidadeGoalPorId(id));
     }
 
     @Transactional
     public void marcarComoCompleta(Long id) {
-        var goal = goalRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Goal com id: " + id + " não encontrada"));
+        var goal = buscarEntidadeGoalPorId(id);
         goal.setCompleted(true);
         goalRepository.save(goal);
+    }
+
+    // busca a meta e garante que ela pertence ao usuário logado
+    private Goal buscarEntidadeGoalPorId(Long id) {
+        var goal = goalRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Goal com id: " + id + " não encontrada"));
+        var dono = goal.getUser() != null ? goal.getUser()
+                : goal.getSkill() != null ? goal.getSkill().getUser() : null;
+        autorizacaoService.verificarDono(dono);
+        return goal;
     }
 }

@@ -9,7 +9,6 @@ import br.com.fiap.skilltrack_backend_java.skilltrack.model.enums.Perfil;
 import br.com.fiap.skilltrack_backend_java.skilltrack.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +23,9 @@ public class UsuarioService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private AutorizacaoService autorizacaoService;
 
     @Transactional(readOnly = true)
     public Page<UsuarioResponseDTO> listarTodos(Pageable pageable) {
@@ -49,7 +51,7 @@ public class UsuarioService {
         var usuario = UsuarioMapper.toEntity(usuarioRequestDTO);
         usuario.setSenha(passwordEncoder.encode(usuarioRequestDTO.getSenha()));
         // somente um ADMIN pode definir o perfil; cadastro público é sempre USER
-        usuario.setPerfil(usuarioLogadoEhAdmin() && usuarioRequestDTO.getPerfil() != null
+        usuario.setPerfil(autorizacaoService.isAdmin() && usuarioRequestDTO.getPerfil() != null
                 ? usuarioRequestDTO.getPerfil()
                 : Perfil.USER);
 
@@ -66,7 +68,7 @@ public class UsuarioService {
         if (usuarioRequestDTO.getSenha() != null && !usuarioRequestDTO.getSenha().isBlank()) {
             usuarioAtual.setSenha(passwordEncoder.encode(usuarioRequestDTO.getSenha()));
         }
-        if (usuarioLogadoEhAdmin() && usuarioRequestDTO.getPerfil() != null) {
+        if (autorizacaoService.isAdmin() && usuarioRequestDTO.getPerfil() != null) {
             usuarioAtual.setPerfil(usuarioRequestDTO.getPerfil());
         }
 
@@ -80,7 +82,9 @@ public class UsuarioService {
         usuarioRepository.delete(usuario);
     }
 
+    // busca o usuário e garante que é o próprio usuário logado (ou um ADMIN)
     public Usuario buscarEntidadeUsuarioPorId(Long id) {
+        autorizacaoService.verificarDono(id);
         return usuarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário com id: " + id + " não encontrado"));
     }
@@ -91,11 +95,5 @@ public class UsuarioService {
                 .ifPresent(existente -> {
                     throw new RegraNegocioException("E-mail já cadastrado.");
                 });
-    }
-
-    private boolean usuarioLogadoEhAdmin() {
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication != null && authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_" + Perfil.ADMIN.name()));
     }
 }
