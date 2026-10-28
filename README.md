@@ -143,6 +143,26 @@ Nunca coloque credenciais reais no `application.properties`; use as variáveis a
 
 > ⚠️ Não altere uma migração que já foi aplicada. Para mudar o schema, crie um novo arquivo `V2__descricao.sql`, `V3__...` etc.
 
+
+### ☁️ Deploy (Railway)
+
+O projeto possui um `Dockerfile`, usado automaticamente pelo Railway.
+
+1. Crie um projeto no Railway e adicione um banco **MySQL**.
+2. Adicione um serviço a partir deste repositório do GitHub.
+3. No serviço da API, configure as variáveis (as referências `${{MySQL.*}}` apontam para o banco do mesmo projeto):
+
+```properties
+DB_URL=jdbc:mysql://${{MySQL.MYSQLHOST}}:${{MySQL.MYSQLPORT}}/${{MySQL.MYSQLDATABASE}}?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false
+DB_USERNAME=${{MySQL.MYSQLUSER}}
+DB_PASSWORD=${{MySQL.MYSQLPASSWORD}}
+JWT_SECRET=<valor longo e aleatório>
+CORS_ALLOWED_ORIGINS=https://<seu-front>.vercel.app
+```
+
+4. Em **Settings → Networking**, gere um domínio público para a API.
+
+A porta é definida pelo Railway na variável `PORT`, que a aplicação já utiliza. As migrações do Flyway criam as tabelas na primeira inicialização.
 ---
 
 👨‍💻 Equipe
