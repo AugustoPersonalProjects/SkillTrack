@@ -144,25 +144,48 @@ Nunca coloque credenciais reais no `application.properties`; use as variáveis a
 > ⚠️ Não altere uma migração que já foi aplicada. Para mudar o schema, crie um novo arquivo `V2__descricao.sql`, `V3__...` etc.
 
 
-### ☁️ Deploy (Railway)
+### ☁️ Deploy (Render + Aiven + Vercel)
 
-O projeto possui um `Dockerfile`, usado automaticamente pelo Railway.
+| Camada | Plataforma | URL |
+|--------|------------|-----|
+| Front-end | Vercel | https://skill-track-front-end.vercel.app |
+| API (Java) | Render | https://skilltrack-qohl.onrender.com |
+| Banco de dados | Aiven (MySQL) | acesso restrito (credenciais no console do Aiven) |
 
-1. Crie um projeto no Railway e adicione um banco **MySQL**.
-2. Adicione um serviço a partir deste repositório do GitHub.
-3. No serviço da API, configure as variáveis (as referências `${{MySQL.*}}` apontam para o banco do mesmo projeto):
+#### 1. Banco de dados (Aiven)
+
+1. Crie um serviço **MySQL** no Aiven.
+2. Na aba **Overview**, copie Host, Port, User e Password. O banco padrão é `defaultdb`.
+3. O Aiven exige SSL. Por isso a URL JDBC usa `sslMode=REQUIRED`, e não `useSSL=false` como no ambiente local.
+
+O Aiven mostra a conexão no formato `mysql://usuario:senha@host:porta/defaultdb?ssl-mode=REQUIRED`. A aplicação espera a URL JDBC, com usuário e senha em variáveis separadas:
 
 ```properties
-DB_URL=jdbc:mysql://${{MySQL.MYSQLHOST}}:${{MySQL.MYSQLPORT}}/${{MySQL.MYSQLDATABASE}}?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false
-DB_USERNAME=${{MySQL.MYSQLUSER}}
-DB_PASSWORD=${{MySQL.MYSQLPASSWORD}}
-JWT_SECRET=<valor longo e aleatório>
-CORS_ALLOWED_ORIGINS=https://<seu-front>.vercel.app
+DB_URL=jdbc:mysql://mysql-skilltrack-skilltrack.j.aivencloud.com:26192/defaultdb?sslMode=REQUIRED&serverTimezone=UTC
 ```
 
-4. Em **Settings → Networking**, gere um domínio público para a API.
+#### 2. API (Render)
 
-A porta é definida pelo Railway na variável `PORT`, que a aplicação já utiliza. As migrações do Flyway criam as tabelas na primeira inicialização.
+O projeto possui um `Dockerfile`, usado pelo Render para o build.
+
+1. Crie um **Web Service** a partir deste repositório do GitHub, com runtime **Docker**.
+2. Em **Environment**, configure as variáveis:
+
+```properties
+DB_URL=jdbc:mysql://mysql-skilltrack-skilltrack.j.aivencloud.com:26192/defaultdb?sslMode=REQUIRED&serverTimezone=UTC
+DB_USERNAME=avnadmin
+DB_PASSWORD=<senha do Aiven>
+JWT_SECRET=<valor longo e aleatório>
+CORS_ALLOWED_ORIGINS=https://skill-track-front-end.vercel.app
+```
+
+A porta é definida pelo Render na variável `PORT`, que a aplicação já utiliza. As migrações do Flyway criam as tabelas e as categorias padrão na primeira inicialização.
+
+> ℹ️ No plano gratuito, o Render suspende o serviço após ~15 minutos sem uso, e a primeira requisição seguinte pode levar até um minuto.
+
+#### 3. Front-end (Vercel)
+
+O front-end é publicado no Vercel e consome a API em `https://skilltrack-qohl.onrender.com`. O domínio do Vercel precisa estar em `CORS_ALLOWED_ORIGINS` na API; caso contrário, o navegador bloqueia as requisições.
 ---
 
 👨‍💻 Equipe
