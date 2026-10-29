@@ -16,14 +16,12 @@ public interface ProgressRepository extends JpaRepository<Progress, Long> {
     Page<Progress> findBySkillUserIdOrderByIdAsc(Long userId, Pageable pageable);
     List<Progress> findBySkillIdOrderByDateAsc(Long skillId);
 
-    @Query("SELECT AVG(p.percentage) FROM Progress p WHERE p.skill.user.id = :userId")
-    Double findAverageProgressByUserId(@Param("userId") Long userId);
+    // registro mais recente de cada skill do usuário: o de maior data e, no empate, o de maior id
+    @Query("SELECT p FROM Progress p WHERE p.skill.user.id = :userId AND NOT EXISTS (" +
+            "SELECT 1 FROM Progress p2 WHERE p2.skill = p.skill " +
+            "AND (p2.date > p.date OR (p2.date = p.date AND p2.id > p.id)))")
+    List<Progress> findLatestBySkillUserId(@Param("userId") Long userId);
 
-    // nome da skill + média de progresso, na mesma ordem (skills sem progresso aparecem com 0)
-    @Query("SELECT s.name, COALESCE(AVG(p.percentage), 0) FROM Skill s LEFT JOIN s.progresses p " +
-            "WHERE s.user.id = :userId GROUP BY s.id, s.name ORDER BY s.name")
-    List<Object[]> findAverageProgressBySkillByUserId(@Param("userId") Long userId);
-
-    List<Progress> findTop5BySkillUserIdOrderByDateDesc(Long userId);
+    List<Progress> findTop5BySkillUserIdOrderByDateDescIdDesc(Long userId);
 
 }
