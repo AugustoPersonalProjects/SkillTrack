@@ -20,4 +20,11 @@ public interface GoalRepository extends JpaRepository<Goal, Long> {
     @Query("SELECT g FROM Goal g WHERE g.user.id = :userId")
     List<Goal> findByUserId(@Param("userId") Long userId);
 
+    long countByCompletedTrue();
+
+    // id do usuário, total de metas e metas concluídas
+    @Query("SELECT g.user.id, COUNT(g), SUM(CASE WHEN g.completed = true THEN 1 ELSE 0 END) " +
+            "FROM Goal g WHERE g.user IS NOT NULL GROUP BY g.user.id")
+    List<Object[]> countGroupedByUser();
+
 }
