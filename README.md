@@ -48,6 +48,11 @@ O **SkillTrack** foi criado para resolver esse problema, fornecendo uma platafor
 - 🗂️ **Categorias (Categories)**
   - Organização das habilidades em áreas de conhecimento.
 
+- 🛡️ **Administração (perfil ADMIN)**
+  - Resumo do sistema em `GET /admin/resumo`: totais e contagem de skills e metas por usuário.
+  - Gestão de usuários (perfil, dados e exclusão) e de categorias.
+  - O sistema nunca fica sem administrador: o último ADMIN não pode ser rebaixado nem excluído.
+
 ---
 
 ## 🧩 Estrutura de Pastas
@@ -138,6 +143,9 @@ Para recriar o banco do zero: `docker compose down -v && docker compose up -d`.
 | `DB_PASSWORD` | `skilltrack` | Senha do banco |
 | `JWT_SECRET` | valor de dev | **Obrigatório trocar em produção** |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:*,http://127.0.0.1:*` | Origens do front-end (separadas por vírgula) |
+| `ADMIN_EMAIL` | vazio | E-mail do ADMIN inicial. Se o usuário já existir, é promovido a ADMIN |
+| `ADMIN_PASSWORD` | vazio | Senha do ADMIN inicial (mínimo de 6 caracteres), usada só se ele ainda não existir |
+| `ADMIN_NAME` | `Administrador` | Nome do ADMIN inicial |
 
 Nunca coloque credenciais reais no `application.properties`; use as variáveis acima.
 
@@ -177,9 +185,13 @@ DB_USERNAME=avnadmin
 DB_PASSWORD=<senha do Aiven>
 JWT_SECRET=<valor longo e aleatório>
 CORS_ALLOWED_ORIGINS=https://skill-track-front-end.vercel.app
+ADMIN_EMAIL=<seu e-mail>
+ADMIN_PASSWORD=<senha forte, usada só se o usuário ainda não existir>
 ```
 
 A porta é definida pelo Render na variável `PORT`, que a aplicação já utiliza. As migrações do Flyway criam as tabelas e as categorias padrão na primeira inicialização.
+
+Para ter acesso ao painel de administração, defina `ADMIN_EMAIL`. Se já existir uma conta com esse e-mail, ela é promovida a ADMIN na próxima inicialização, sem trocar a senha. É preciso sair e entrar de novo no front para o menu de administração aparecer.
 
 > ℹ️ No plano gratuito, o Render suspende o serviço após ~15 minutos sem uso, e a primeira requisição seguinte pode levar até um minuto.
 
@@ -191,7 +203,7 @@ O front-end é publicado no Vercel e consome a API em `https://skilltrack-qohl.o
 👨‍💻 Equipe
 Projeto desenvolvido por Augusto Lopes Lyra da FIAP
 
-🤖 Este projeto foi desenvolvido com auxílio de Inteligência Artificial para o deploy e o versionamento.
+🤖 Este projeto foi desenvolvido com auxílio de Inteligência Artificial no deploy, no versionamento e em partes do código (interface do front-end e cálculo do dashboard).
 
 📅 Ano: 2025
 
