@@ -2,6 +2,7 @@ package br.com.fiap.skilltrack_backend_java.skilltrack.controller;
 
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.UsuarioRequestDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.UsuarioResponseDTO;
+import br.com.fiap.skilltrack_backend_java.skilltrack.dto.UsuarioUpdateDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.service.UsuarioService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +47,7 @@ public class UsuarioController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UsuarioResponseDTO> atualizar(@PathVariable Long id, @RequestBody @Valid UsuarioRequestDTO usuarioDTO) {
+    public ResponseEntity<UsuarioResponseDTO> atualizar(@PathVariable Long id, @RequestBody @Valid UsuarioUpdateDTO usuarioDTO) {
         var usuarioAtualizado = usuarioService.atualizar(id, usuarioDTO);
         adicionarLinks(usuarioAtualizado);
         return ResponseEntity.ok(usuarioAtualizado);

@@ -2,6 +2,7 @@ package br.com.fiap.skilltrack_backend_java.skilltrack.service;
 
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.UsuarioRequestDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.UsuarioResponseDTO;
+import br.com.fiap.skilltrack_backend_java.skilltrack.dto.UsuarioUpdateDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.exceptions.RegraNegocioException;
 import br.com.fiap.skilltrack_backend_java.skilltrack.mapper.UsuarioMapper;
 import br.com.fiap.skilltrack_backend_java.skilltrack.model.Usuario;
@@ -59,17 +60,21 @@ public class UsuarioService {
     }
 
     @Transactional
-    public UsuarioResponseDTO atualizar(Long id, UsuarioRequestDTO usuarioRequestDTO) {
+    public UsuarioResponseDTO atualizar(Long id, UsuarioUpdateDTO usuarioUpdateDTO) {
         var usuarioAtual = buscarEntidadeUsuarioPorId(id);
-        validarEmailDisponivel(usuarioRequestDTO.getEmail(), id);
+        validarEmailDisponivel(usuarioUpdateDTO.getEmail(), id);
 
-        usuarioAtual.setNome(usuarioRequestDTO.getNome());
-        usuarioAtual.setEmail(usuarioRequestDTO.getEmail());
-        if (usuarioRequestDTO.getSenha() != null && !usuarioRequestDTO.getSenha().isBlank()) {
-            usuarioAtual.setSenha(passwordEncoder.encode(usuarioRequestDTO.getSenha()));
+        usuarioAtual.setNome(usuarioUpdateDTO.getNome());
+        usuarioAtual.setEmail(usuarioUpdateDTO.getEmail());
+        if (usuarioUpdateDTO.getSenha() != null && !usuarioUpdateDTO.getSenha().isBlank()) {
+            usuarioAtual.setSenha(passwordEncoder.encode(usuarioUpdateDTO.getSenha()));
         }
-        if (autorizacaoService.isAdmin() && usuarioRequestDTO.getPerfil() != null) {
-            usuarioAtual.setPerfil(usuarioRequestDTO.getPerfil());
+        var novoPerfil = usuarioUpdateDTO.getPerfil();
+        if (autorizacaoService.isAdmin() && novoPerfil != null && novoPerfil != usuarioAtual.getPerfil()) {
+            if (novoPerfil != Perfil.ADMIN) {
+                garantirOutroAdministrador(usuarioAtual);
+            }
+            usuarioAtual.setPerfil(novoPerfil);
         }
 
         var usuarioAtualizado = usuarioRepository.save(usuarioAtual);
@@ -79,6 +84,7 @@ public class UsuarioService {
     @Transactional
     public void deletar(Long id) {
         var usuario = buscarEntidadeUsuarioPorId(id);
+        garantirOutroAdministrador(usuario);
         usuarioRepository.delete(usuario);
     }
 
@@ -87,6 +93,13 @@ public class UsuarioService {
         autorizacaoService.verificarDono(id);
         return usuarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário com id: " + id + " não encontrado"));
+    }
+
+    // o sistema não pode ficar sem nenhum ADMIN, senão ninguém mais gerencia usuários e categorias
+    private void garantirOutroAdministrador(Usuario usuario) {
+        if (usuario.getPerfil() == Perfil.ADMIN && usuarioRepository.countByPerfil(Perfil.ADMIN) <= 1) {
+            throw new RegraNegocioException("Não é possível remover o último administrador do sistema.");
+        }
     }
 
     private void validarEmailDisponivel(String email, Long idUsuarioAtual) {
