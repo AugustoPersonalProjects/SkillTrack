@@ -203,7 +203,7 @@ O front-end é publicado no Vercel e consome a API em `https://skilltrack-qohl.o
 👨‍💻 Equipe
 Projeto desenvolvido por Augusto Lopes Lyra da FIAP
 
-🤖 Este projeto foi desenvolvido com auxílio de Inteligência Artificial no deploy, no versionamento e em partes do código (interface do front-end e cálculo do dashboard).
+🤖 Este projeto foi desenvolvido com auxílio de Inteligência Artificial no deploy, no versionamento e em partes do código (interface do front-end, área de administração e cálculo do dashboard).
 
 📅 Ano: 2025
 
