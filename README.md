@@ -35,7 +35,9 @@ O **SkillTrack** foi criado para resolver esse problema, fornecendo uma platafor
 
 - 👤 **Gestão de Usuários**
   - Registro e autenticação via Spring Security.
-  - Perfis com nome, e-mail e data de criação.
+  - Perfil com nome, e-mail, bio, cor do avatar e tema, nas rotas `/usuarios/me`. O tema fica salvo na conta e acompanha o usuário em qualquer dispositivo.
+  - Alterar o próprio e-mail ou a própria senha exige a senha atual. Trocar a senha encerra as sessões abertas nos outros dispositivos.
+  - Limite de tentativas no login, no cadastro e na confirmação da senha atual, com resposta `429` e o cabeçalho `Retry-After`.
 
 - 🧩 **Cadastro de Habilidades (Skills)**
   - Associação a categorias (ex: Programação, Design, Comunicação).
@@ -151,6 +153,8 @@ O `spring-boot:run` ativa o perfil `dev`, que define um `JWT_SECRET` local. Ao i
 | `ADMIN_EMAIL` | vazio | E-mail do primeiro ADMIN. Só é usado enquanto o sistema não tem nenhum ADMIN |
 | `ADMIN_PASSWORD` | vazio | Senha do primeiro ADMIN (mínimo de 6 caracteres). Se a conta já existir, precisa ser a senha dela |
 | `ADMIN_NAME` | `Administrador` | Nome do ADMIN inicial |
+| `RATE_LIMIT_ENABLED` | `true`; `false` no perfil `dev` | Liga o limite de tentativas. Os testes de ponta a ponta desligam, porque criam várias contas a partir do mesmo IP |
+| `CLIENT_IP_HEADER` | vazio | Cabeçalho com o IP real do cliente quando a API está atrás de um proxy. Vazio usa o IP da conexão. Informe somente um cabeçalho que o cliente não consiga falsificar |
 
 Nunca coloque credenciais reais no `application.properties`; use as variáveis acima.
 
@@ -202,9 +206,12 @@ JWT_SECRET=<valor longo e aleatório>
 CORS_ALLOWED_ORIGINS=https://skill-track-front-end.vercel.app
 ADMIN_EMAIL=<seu e-mail>
 ADMIN_PASSWORD=<senha forte; se a conta já existir, a senha dela>
+CLIENT_IP_HEADER=CF-Connecting-IP
 ```
 
 A porta é definida pelo Render na variável `PORT`, que a aplicação já utiliza. As migrações do Flyway criam as tabelas e as categorias padrão na primeira inicialização.
+
+O Render recebe as requisições pela Cloudflare, e a conexão que chega à API vem de um proxy interno. Sem `CLIENT_IP_HEADER`, todos os clientes aparecem com o mesmo IP e dividem o mesmo limite de tentativas. O `X-Forwarded-For` não serve para isso, porque o Render mantém o valor enviado pelo cliente.
 
 Para criar o primeiro acesso ao painel de administração, defina `ADMIN_EMAIL` e `ADMIN_PASSWORD`. Enquanto o sistema não tiver nenhum ADMIN, a aplicação cria essa conta ao iniciar. Se o e-mail já estiver cadastrado, a conta só é promovida quando `ADMIN_PASSWORD` for a senha dela, porque o cadastro público não confirma quem é o dono do e-mail. Depois disso, os perfis são geridos pelo painel. É preciso sair e entrar de novo no front para o menu de administração aparecer.
 

@@ -37,6 +37,9 @@ public class UsuarioService {
     @Autowired
     private AutorizacaoService autorizacaoService;
 
+    @Autowired
+    private LimiteDeTentativasService limiteDeTentativas;
+
     @Transactional(readOnly = true)
     public Page<UsuarioResponseDTO> listarTodos(Pageable pageable) {
         return usuarioRepository.findAllByOrderByIdAsc(pageable)
@@ -159,6 +162,7 @@ public class UsuarioService {
     // um token roubado não basta para tomar a conta: quem altera as credenciais precisa saber a senha.
     // O erro não pode ser 401, porque o front encerraria a sessão de quem só digitou a senha errada
     private void confirmarSenhaAtual(Usuario usuario, String senhaAtual) {
+        limiteDeTentativas.verificarSenhaAtual(usuario.getId());
         if (!passwordEncoder.matches(senhaAtual, usuario.getSenha())) {
             throw new RegraNegocioException("A senha atual está incorreta.");
         }

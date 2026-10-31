@@ -9,6 +9,7 @@ import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -155,6 +156,17 @@ public class GlobalExceptionHandler {
                 "error", "Requisição inválida",
                 "message", "O campo de ordenação informado não existe."
         ));
+    }
+
+    // 429 - Muitas tentativas em pouco tempo
+    @ExceptionHandler(LimiteExcedidoException.class)
+    public ResponseEntity<?> tratarLimiteExcedido(LimiteExcedidoException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getSegundosDeEspera()))
+                .body(Map.of(
+                        "error", "Muitas tentativas",
+                        "message", ex.getMessage()
+                ));
     }
 
     // 500 - Erro genérico inesperado
