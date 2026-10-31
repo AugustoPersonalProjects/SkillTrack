@@ -1,5 +1,8 @@
 # 🧠 SkillTrack — Sistema de Gestão de Habilidades Profissionais
 
+[![CI](https://github.com/AugustoPersonalProjects/SkillTrack/actions/workflows/ci.yml/badge.svg)](https://github.com/AugustoPersonalProjects/SkillTrack/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/AugustoPersonalProjects/SkillTrack/actions/workflows/codeql.yml/badge.svg)](https://github.com/AugustoPersonalProjects/SkillTrack/actions/workflows/codeql.yml)
+
 ![Java](https://img.shields.io/badge/Java-21-red?style=for-the-badge&logo=openjdk)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.16-brightgreen?style=for-the-badge&logo=springboot)
 ![MySQL](https://img.shields.io/badge/Database-MySQL%208-blue?style=for-the-badge&logo=mysql)
@@ -81,7 +84,7 @@ O **SkillTrack** foi criado para resolver esse problema, fornecendo uma platafor
 | **Validação** | Jakarta Validation (Bean Validation) |
 | **Documentação** | Swagger / OpenAPI |
 | **Gerenciador de Dependências** | Maven |
-| **Testes** | JUnit 5, Mockito |
+| **Testes** | JUnit 5, MockMvc, Testcontainers (MySQL) |
 
 ---
 
@@ -152,6 +155,16 @@ O `spring-boot:run` ativa o perfil `dev`, que define um `JWT_SECRET` local. Ao i
 Nunca coloque credenciais reais no `application.properties`; use as variáveis acima.
 
 > ⚠️ Não altere uma migração que já foi aplicada. Para mudar o schema, crie um novo arquivo `V2__descricao.sql`, `V3__...` etc.
+
+### 🧪 Testes
+
+```bash
+./mvnw test
+```
+
+Os testes sobem a API completa, com as migrações e a configuração de produção, em um MySQL real criado pelo [Testcontainers](https://testcontainers.com). Por isso o Docker precisa estar ligado, mas não é necessário rodar o `docker compose`.
+
+A cada push em `main` e em cada pull request, o GitHub Actions roda os testes, constrói a imagem Docker e faz a análise de segurança com o CodeQL. O Dependabot propõe as atualizações de dependências.
 
 
 ### ☁️ Deploy (Render + Aiven + Vercel)
