@@ -178,11 +178,6 @@ class AutorizacaoDonoDadosTests extends TesteDeIntegracao {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nome\":\"Eva\",\"email\":\"eva@email.com\",\"senha\":\"123456\",\"perfil\":\"ADMIN\"}"))
                 .andExpect(status().isOk());
-        mvc.perform(post("/usuarios")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nome\":\"Leo\",\"email\":\"leo@email.com\",\"senha\":\"123456\",\"perfil\":\"ADMIN\"}"))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.perfil").value("USER"));
 
         assertThat(usuarioRepository.findByEmail("eva@email.com").orElseThrow().getPerfil().name()).isEqualTo("USER");
     }

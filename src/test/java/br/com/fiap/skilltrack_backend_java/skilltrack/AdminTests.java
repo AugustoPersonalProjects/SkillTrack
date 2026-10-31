@@ -83,8 +83,48 @@ class AdminTests extends TesteDeIntegracao {
         mvc.perform(put("/usuarios/" + idAna).header("Authorization", bearer(tokenAna))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nome\":\"Ana\",\"email\":\"ana@email.com\",\"perfil\":\"ADMIN\"}"))
+                .andExpect(status().isForbidden());
+
+        assertThat(usuarioRepository.findById(idAna).orElseThrow().getPerfil()).isEqualTo(Perfil.USER);
+    }
+
+    @Test
+    void somenteAdminCadastraUsuarioComPerfil() throws Exception {
+        var novoAdmin = "{\"nome\":\"Eva\",\"email\":\"eva@email.com\",\"senha\":\"123456\",\"perfil\":\"ADMIN\"}";
+
+        mvc.perform(post("/usuarios").contentType(MediaType.APPLICATION_JSON).content(novoAdmin))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(post("/usuarios").header("Authorization", bearer(tokenAna))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(novoAdmin))
+                .andExpect(status().isForbidden());
+        assertThat(usuarioRepository.findByEmail("eva@email.com")).isEmpty();
+
+        mvc.perform(post("/usuarios").header("Authorization", bearer(tokenAdmin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(novoAdmin))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.perfil").value("ADMIN"));
+    }
+
+    @Test
+    void adminNaoAlteraAsPropriasCredenciaisSemConfirmarASenha() throws Exception {
+        mvc.perform(put("/usuarios/" + idAdmin).header("Authorization", bearer(tokenAdmin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Admin\",\"email\":\"outro@email.com\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Altere o seu e-mail e a sua senha na página Meu perfil."));
+        mvc.perform(put("/usuarios/" + idAdmin).header("Authorization", bearer(tokenAdmin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Admin\",\"email\":\"admin@email.com\",\"senha\":\"novaSenha1\"}"))
+                .andExpect(status().isBadRequest());
+
+        // o nome continua podendo ser alterado por aqui
+        mvc.perform(put("/usuarios/" + idAdmin).header("Authorization", bearer(tokenAdmin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Administradora\",\"email\":\"admin@email.com\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.perfil").value("USER"));
+                .andExpect(jsonPath("$.nome").value("Administradora"));
     }
 
     @Test
@@ -110,7 +150,7 @@ class AdminTests extends TesteDeIntegracao {
 
     @Test
     void senhaCurtaNaAtualizacaoEhRejeitada() throws Exception {
-        mvc.perform(put("/usuarios/" + idAna).header("Authorization", bearer(tokenAna))
+        mvc.perform(put("/usuarios/" + idAna).header("Authorization", bearer(tokenAdmin))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nome\":\"Ana\",\"email\":\"ana@email.com\",\"senha\":\"123\"}"))
                 .andExpect(status().isBadRequest());

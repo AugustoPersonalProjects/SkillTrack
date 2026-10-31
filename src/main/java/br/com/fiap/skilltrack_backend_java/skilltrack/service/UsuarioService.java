@@ -1,5 +1,7 @@
 package br.com.fiap.skilltrack_backend_java.skilltrack.service;
 
+import br.com.fiap.skilltrack_backend_java.skilltrack.dto.AlteracaoEmailDTO;
+import br.com.fiap.skilltrack_backend_java.skilltrack.dto.AlteracaoSenhaDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.UsuarioRequestDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.UsuarioResponseDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.UsuarioUpdateDTO;
@@ -66,11 +68,17 @@ public class UsuarioService {
     @Transactional
     public UsuarioResponseDTO atualizar(Long id, UsuarioUpdateDTO usuarioUpdateDTO) {
         var usuarioAtual = buscarEntidadeUsuarioPorId(id);
+        var informouSenha = usuarioUpdateDTO.getSenha() != null && !usuarioUpdateDTO.getSenha().isBlank();
+        // as próprias credenciais só mudam pelas rotas /usuarios/me, que confirmam a senha atual
+        if (id.equals(autorizacaoService.getIdUsuarioLogado())
+                && (informouSenha || !usuarioAtual.getEmail().equalsIgnoreCase(usuarioUpdateDTO.getEmail()))) {
+            throw new RegraNegocioException("Altere o seu e-mail e a sua senha na página Meu perfil.");
+        }
         validarEmailDisponivel(usuarioUpdateDTO.getEmail(), id);
 
         usuarioAtual.setNome(usuarioUpdateDTO.getNome());
         usuarioAtual.setEmail(usuarioUpdateDTO.getEmail());
-        if (usuarioUpdateDTO.getSenha() != null && !usuarioUpdateDTO.getSenha().isBlank()) {
+        if (informouSenha) {
             definirSenha(usuarioAtual, usuarioUpdateDTO.getSenha());
         }
         var novoPerfil = usuarioUpdateDTO.getPerfil();
@@ -85,6 +93,30 @@ public class UsuarioService {
         return UsuarioMapper.toResponseDTO(usuarioAtualizado);
     }
 
+    @Transactional(readOnly = true)
+    public UsuarioResponseDTO buscarUsuarioLogado() {
+        return UsuarioMapper.toResponseDTO(buscarEntidadeUsuarioLogado());
+    }
+
+    @Transactional
+    public UsuarioResponseDTO alterarEmail(AlteracaoEmailDTO dados) {
+        var usuario = buscarEntidadeUsuarioLogado();
+        confirmarSenhaAtual(usuario, dados.senhaAtual());
+        validarEmailDisponivel(dados.email(), usuario.getId());
+
+        usuario.setEmail(dados.email());
+        return UsuarioMapper.toResponseDTO(usuarioRepository.save(usuario));
+    }
+
+    @Transactional
+    public Usuario alterarSenha(AlteracaoSenhaDTO dados) {
+        var usuario = buscarEntidadeUsuarioLogado();
+        confirmarSenhaAtual(usuario, dados.senhaAtual());
+
+        definirSenha(usuario, dados.novaSenha());
+        return usuarioRepository.save(usuario);
+    }
+
     @Transactional
     public void deletar(Long id) {
         var usuario = buscarEntidadeUsuarioPorId(id);
@@ -97,6 +129,18 @@ public class UsuarioService {
         autorizacaoService.verificarDono(id);
         return usuarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário com id: " + id + " não encontrado"));
+    }
+
+    private Usuario buscarEntidadeUsuarioLogado() {
+        return buscarEntidadeUsuarioPorId(autorizacaoService.getIdUsuarioLogado());
+    }
+
+    // um token roubado não basta para tomar a conta: quem altera as credenciais precisa saber a senha.
+    // O erro não pode ser 401, porque o front encerraria a sessão de quem só digitou a senha errada
+    private void confirmarSenhaAtual(Usuario usuario, String senhaAtual) {
+        if (!passwordEncoder.matches(senhaAtual, usuario.getSenha())) {
+            throw new RegraNegocioException("A senha atual está incorreta.");
+        }
     }
 
     // trocar a senha encerra as sessões abertas, inclusive a de quem roubou um token

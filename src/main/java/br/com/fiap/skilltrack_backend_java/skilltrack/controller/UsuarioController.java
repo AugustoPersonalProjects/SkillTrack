@@ -1,8 +1,12 @@
 package br.com.fiap.skilltrack_backend_java.skilltrack.controller;
 
+import br.com.fiap.skilltrack_backend_java.skilltrack.dto.AlteracaoEmailDTO;
+import br.com.fiap.skilltrack_backend_java.skilltrack.dto.AlteracaoSenhaDTO;
+import br.com.fiap.skilltrack_backend_java.skilltrack.dto.TokenDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.UsuarioRequestDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.UsuarioResponseDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.UsuarioUpdateDTO;
+import br.com.fiap.skilltrack_backend_java.skilltrack.service.TokenService;
 import br.com.fiap.skilltrack_backend_java.skilltrack.service.UsuarioService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +26,26 @@ public class UsuarioController {
     @Autowired
     private UsuarioService usuarioService;
 
+    @Autowired
+    private TokenService tokenService;
+
+    @GetMapping("/me")
+    public ResponseEntity<UsuarioResponseDTO> buscarUsuarioLogado() {
+        return ResponseEntity.ok(usuarioService.buscarUsuarioLogado());
+    }
+
+    @PutMapping("/me/email")
+    public ResponseEntity<UsuarioResponseDTO> alterarEmail(@RequestBody @Valid AlteracaoEmailDTO dados) {
+        return ResponseEntity.ok(usuarioService.alterarEmail(dados));
+    }
+
+    // a troca invalida os tokens emitidos até aqui: a resposta traz o novo token desta sessão
+    @PutMapping("/me/senha")
+    public ResponseEntity<TokenDTO> alterarSenha(@RequestBody @Valid AlteracaoSenhaDTO dados) {
+        var usuario = usuarioService.alterarSenha(dados);
+        return ResponseEntity.ok(new TokenDTO(tokenService.gerarToken(usuario)));
+    }
+
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<UsuarioResponseDTO>> listarTodos(
@@ -39,6 +63,7 @@ public class UsuarioController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UsuarioResponseDTO> salvar(@RequestBody @Valid UsuarioRequestDTO usuarioDTO, UriComponentsBuilder uriBuilder) {
         var usuario = usuarioService.salvar(usuarioDTO);
         adicionarLinks(usuario);
@@ -47,6 +72,7 @@ public class UsuarioController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UsuarioResponseDTO> atualizar(@PathVariable Long id, @RequestBody @Valid UsuarioUpdateDTO usuarioDTO) {
         var usuarioAtualizado = usuarioService.atualizar(id, usuarioDTO);
         adicionarLinks(usuarioAtualizado);
