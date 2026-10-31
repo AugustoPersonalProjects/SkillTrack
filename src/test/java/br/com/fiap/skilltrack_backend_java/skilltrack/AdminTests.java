@@ -56,6 +56,7 @@ class AdminTests extends TesteDeIntegracao {
                 .andExpect(jsonPath("$.completedGoals").value(0))
                 .andExpect(jsonPath("$.usuarios[?(@.email == 'ana@email.com')].totalSkills").value(1))
                 .andExpect(jsonPath("$.usuarios[?(@.email == 'ana@email.com')].totalGoals").value(1))
+                .andExpect(jsonPath("$.usuarios[?(@.email == 'ana@email.com')].cor_avatar").value("ESMERALDA"))
                 .andExpect(jsonPath("$.usuarios[?(@.email == 'admin@email.com')].totalSkills").value(0));
     }
 

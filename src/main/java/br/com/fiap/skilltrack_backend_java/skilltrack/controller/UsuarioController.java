@@ -2,6 +2,8 @@ package br.com.fiap.skilltrack_backend_java.skilltrack.controller;
 
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.AlteracaoEmailDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.AlteracaoSenhaDTO;
+import br.com.fiap.skilltrack_backend_java.skilltrack.dto.AlteracaoTemaDTO;
+import br.com.fiap.skilltrack_backend_java.skilltrack.dto.DadosPessoaisDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.TokenDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.UsuarioRequestDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.UsuarioResponseDTO;
@@ -32,6 +34,16 @@ public class UsuarioController {
     @GetMapping("/me")
     public ResponseEntity<UsuarioResponseDTO> buscarUsuarioLogado() {
         return ResponseEntity.ok(usuarioService.buscarUsuarioLogado());
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<UsuarioResponseDTO> atualizarDadosPessoais(@RequestBody @Valid DadosPessoaisDTO dados) {
+        return ResponseEntity.ok(usuarioService.atualizarDadosPessoais(dados));
+    }
+
+    @PutMapping("/me/tema")
+    public ResponseEntity<UsuarioResponseDTO> alterarTema(@RequestBody @Valid AlteracaoTemaDTO dados) {
+        return ResponseEntity.ok(usuarioService.alterarTema(dados));
     }
 
     @PutMapping("/me/email")

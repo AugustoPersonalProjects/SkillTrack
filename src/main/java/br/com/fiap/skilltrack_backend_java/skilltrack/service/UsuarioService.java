@@ -2,6 +2,8 @@ package br.com.fiap.skilltrack_backend_java.skilltrack.service;
 
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.AlteracaoEmailDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.AlteracaoSenhaDTO;
+import br.com.fiap.skilltrack_backend_java.skilltrack.dto.AlteracaoTemaDTO;
+import br.com.fiap.skilltrack_backend_java.skilltrack.dto.DadosPessoaisDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.UsuarioRequestDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.UsuarioResponseDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.UsuarioUpdateDTO;
@@ -15,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -96,6 +99,24 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public UsuarioResponseDTO buscarUsuarioLogado() {
         return UsuarioMapper.toResponseDTO(buscarEntidadeUsuarioLogado());
+    }
+
+    @Transactional
+    public UsuarioResponseDTO atualizarDadosPessoais(DadosPessoaisDTO dados) {
+        var usuario = buscarEntidadeUsuarioLogado();
+
+        usuario.setNome(dados.nome().trim());
+        usuario.setBio(StringUtils.hasText(dados.bio()) ? dados.bio().trim() : null);
+        usuario.setCorAvatar(dados.corAvatar());
+        return UsuarioMapper.toResponseDTO(usuarioRepository.save(usuario));
+    }
+
+    @Transactional
+    public UsuarioResponseDTO alterarTema(AlteracaoTemaDTO dados) {
+        var usuario = buscarEntidadeUsuarioLogado();
+
+        usuario.setTema(dados.tema());
+        return UsuarioMapper.toResponseDTO(usuarioRepository.save(usuario));
     }
 
     @Transactional

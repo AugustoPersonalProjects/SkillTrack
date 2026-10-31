@@ -29,12 +29,138 @@ class MeuPerfilTests extends TesteDeIntegracao {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id_usuario").value(idAna))
                 .andExpect(jsonPath("$.email").value("ana@email.com"))
-                .andExpect(jsonPath("$.senha").doesNotExist());
+                .andExpect(jsonPath("$.bio").isEmpty())
+                .andExpect(jsonPath("$.cor_avatar").value("ESMERALDA"))
+                .andExpect(jsonPath("$.tema").value("SISTEMA"))
+                .andExpect(jsonPath("$.senha").doesNotExist())
+                .andExpect(jsonPath("$.versaoToken").doesNotExist());
+    }
+
+    @Test
+    void usuarioPersonalizaOPerfil() throws Exception {
+        mvc.perform(put("/usuarios/me").header("Authorization", bearer(tokenAna))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"  Ana Souza  \",\"bio\":\"  Dev Java  \",\"cor_avatar\":\"VIOLETA\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome").value("Ana Souza"))
+                .andExpect(jsonPath("$.bio").value("Dev Java"))
+                .andExpect(jsonPath("$.cor_avatar").value("VIOLETA"));
+
+        mvc.perform(get("/usuarios/me").header("Authorization", bearer(tokenAna)))
+                .andExpect(jsonPath("$.nome").value("Ana Souza"))
+                .andExpect(jsonPath("$.cor_avatar").value("VIOLETA"));
+    }
+
+    @Test
+    void bioEmBrancoLimpaOCampo() throws Exception {
+        mvc.perform(put("/usuarios/me").header("Authorization", bearer(tokenAna))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Ana\",\"bio\":\"Dev Java\",\"cor_avatar\":\"AZUL\"}"))
+                .andExpect(jsonPath("$.bio").value("Dev Java"));
+
+        mvc.perform(put("/usuarios/me").header("Authorization", bearer(tokenAna))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Ana\",\"bio\":\"   \",\"cor_avatar\":\"AZUL\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.bio").isEmpty());
+    }
+
+    @Test
+    void personalizarOPerfilNaoAlteraEmailSenhaNemPerfilDeAcesso() throws Exception {
+        mvc.perform(put("/usuarios/me").header("Authorization", bearer(tokenAna))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Ana\",\"cor_avatar\":\"ROSA\",\"email\":\"outro@email.com\","
+                                + "\"senha\":\"invasora1\",\"perfil\":\"ADMIN\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("ana@email.com"))
+                .andExpect(jsonPath("$.perfil").value("USER"));
+
+        login("ana@email.com", "123456");
+    }
+
+    @Test
+    void dadosInvalidosDoPerfilSaoRecusados() throws Exception {
+        mvc.perform(put("/usuarios/me").header("Authorization", bearer(tokenAna))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Ana\",\"cor_avatar\":\"DOURADO\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("O valor enviado para 'cor_avatar' é inválido."));
+        mvc.perform(put("/usuarios/me").header("Authorization", bearer(tokenAna))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Ana\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$[0].mensagem").value("Escolha a cor do avatar"));
+        mvc.perform(put("/usuarios/me").header("Authorization", bearer(tokenAna))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Ana\",\"cor_avatar\":\"AZUL\",\"bio\":\"" + "a".repeat(281) + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$[0].mensagem").value("A bio deve ter no máximo 280 caracteres"));
+    }
+
+    @Test
+    void bioAceitaOTamanhoMaximoEAcentos() throws Exception {
+        var bio = "é".repeat(280);
+
+        mvc.perform(put("/usuarios/me").header("Authorization", bearer(tokenAna))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Ana\",\"cor_avatar\":\"AZUL\",\"bio\":\"" + bio + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.bio").value(bio));
+    }
+
+    @Test
+    void temaFicaSalvoNaContaEVaiParaOutrasSessoes() throws Exception {
+        var outroDispositivo = login("ana@email.com", "123456");
+
+        mvc.perform(put("/usuarios/me/tema").header("Authorization", bearer(tokenAna))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tema\":\"ESCURO\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tema").value("ESCURO"));
+
+        mvc.perform(get("/usuarios/me").header("Authorization", bearer(outroDispositivo)))
+                .andExpect(jsonPath("$.tema").value("ESCURO"));
+    }
+
+    @Test
+    void temaInvalidoEhRecusado() throws Exception {
+        mvc.perform(put("/usuarios/me/tema").header("Authorization", bearer(tokenAna))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tema\":\"AZUL\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("O valor enviado para 'tema' é inválido."));
+        mvc.perform(put("/usuarios/me/tema").header("Authorization", bearer(tokenAna))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$[0].mensagem").value("Escolha o tema"));
+    }
+
+    @Test
+    void usuarioNaoAlteraOPerfilDeOutraPessoaPorEstasRotas() throws Exception {
+        registrar("Bruno", "bruno@email.com");
+
+        mvc.perform(put("/usuarios/me").header("Authorization", bearer(tokenAna))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Nome Novo\",\"cor_avatar\":\"AZUL\",\"id_usuario\":"
+                                + idDoUsuario("bruno@email.com") + "}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id_usuario").value(idAna));
+
+        assertThat(usuarioRepository.findByEmail("bruno@email.com").orElseThrow().getNome()).isEqualTo("Bruno");
     }
 
     @Test
     void rotasDoPerfilExigemToken() throws Exception {
         mvc.perform(get("/usuarios/me"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(put("/usuarios/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Ana\",\"cor_avatar\":\"AZUL\"}"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(put("/usuarios/me/tema")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tema\":\"ESCURO\"}"))
                 .andExpect(status().isUnauthorized());
         mvc.perform(put("/usuarios/me/email")
                         .contentType(MediaType.APPLICATION_JSON)

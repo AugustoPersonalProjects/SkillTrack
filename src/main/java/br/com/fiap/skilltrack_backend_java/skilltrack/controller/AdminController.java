@@ -62,6 +62,7 @@ public class AdminController {
                     linha.put("email", usuario.getEmail());
                     linha.put("perfil", usuario.getPerfil());
                     linha.put("data_criacao", usuario.getDataCriacao());
+                    linha.put("cor_avatar", usuario.getCorAvatar());
                     linha.put("totalSkills", skillsPorUsuario.getOrDefault(usuario.getId(), 0L));
                     linha.put("totalGoals", metas[0]);
                     linha.put("completedGoals", metas[1]);
