@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.*;
 import org.springframework.hateoas.RepresentationModel;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 @Setter
@@ -26,7 +26,7 @@ public class UsuarioResponseDTO extends RepresentationModel<UsuarioResponseDTO> 
     private Perfil perfil;
 
     @JsonProperty("data_criacao")
-    private LocalDateTime dataCriacao;
+    private Instant dataCriacao;
 
     private String bio;
 

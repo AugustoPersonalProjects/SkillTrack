@@ -122,7 +122,11 @@ public class GoalService {
     @Transactional
     public void marcarComoCompleta(Long id) {
         var goal = buscarEntidadeGoalPorId(id);
-        goal.setCompleted(true);
+        // concluir de novo não muda a data da primeira conclusão
+        if (!goal.isCompleted()) {
+            goal.setCompleted(true);
+            goal.setDataConclusao(clock.instant());
+        }
         goalRepository.save(goal);
     }
 

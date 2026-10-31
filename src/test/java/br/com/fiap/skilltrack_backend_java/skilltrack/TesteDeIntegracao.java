@@ -51,7 +51,7 @@ abstract class TesteDeIntegracao {
     protected PasswordEncoder passwordEncoder;
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
+    protected JdbcTemplate jdbcTemplate;
 
     protected Long idCategoria;
 

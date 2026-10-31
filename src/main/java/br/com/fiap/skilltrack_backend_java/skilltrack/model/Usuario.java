@@ -10,7 +10,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 
@@ -42,7 +42,7 @@ public class Usuario implements UserDetails {
     private Perfil perfil;
 
     @Column(name = "data_criacao", updatable = false)
-    private LocalDateTime dataCriacao;
+    private Instant dataCriacao;
 
     // vai dentro do token: ao mudar, os tokens emitidos antes deixam de valer
     @Column(name = "versao_token", nullable = false)
@@ -61,7 +61,7 @@ public class Usuario implements UserDetails {
 
     @PrePersist
     protected void onCreate() {
-        this.dataCriacao = LocalDateTime.now();
+        this.dataCriacao = Instant.now();
     }
 
     @Override
