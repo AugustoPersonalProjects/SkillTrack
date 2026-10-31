@@ -26,7 +26,7 @@ public class UsuarioUpdateDTO {
     @Size(max = 150)
     private String email;
 
-    @Pattern(regexp = "^$|^.{6,150}$", message = "A senha deve ter entre 6 e 150 caracteres")
+    @Pattern(regexp = "^$|^.{6,72}$", message = "A senha deve ter entre 6 e 72 caracteres")
     private String senha;
 
     // opcional: só é respeitado quando quem faz a requisição é ADMIN

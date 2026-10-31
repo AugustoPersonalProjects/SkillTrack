@@ -16,8 +16,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.nio.charset.StandardCharsets;
+
 @Service
 public class UsuarioService {
+
+    private static final int TAMANHO_MAXIMO_SENHA_BYTES = 72;
 
     @Autowired
     private UsuarioRepository usuarioRepository;
@@ -50,7 +54,7 @@ public class UsuarioService {
         validarEmailDisponivel(usuarioRequestDTO.getEmail(), null);
 
         var usuario = UsuarioMapper.toEntity(usuarioRequestDTO);
-        usuario.setSenha(passwordEncoder.encode(usuarioRequestDTO.getSenha()));
+        usuario.setSenha(codificarSenha(usuarioRequestDTO.getSenha()));
         // somente um ADMIN pode definir o perfil; cadastro público é sempre USER
         usuario.setPerfil(autorizacaoService.isAdmin() && usuarioRequestDTO.getPerfil() != null
                 ? usuarioRequestDTO.getPerfil()
@@ -67,7 +71,7 @@ public class UsuarioService {
         usuarioAtual.setNome(usuarioUpdateDTO.getNome());
         usuarioAtual.setEmail(usuarioUpdateDTO.getEmail());
         if (usuarioUpdateDTO.getSenha() != null && !usuarioUpdateDTO.getSenha().isBlank()) {
-            usuarioAtual.setSenha(passwordEncoder.encode(usuarioUpdateDTO.getSenha()));
+            usuarioAtual.setSenha(codificarSenha(usuarioUpdateDTO.getSenha()));
         }
         var novoPerfil = usuarioUpdateDTO.getPerfil();
         if (autorizacaoService.isAdmin() && novoPerfil != null && novoPerfil != usuarioAtual.getPerfil()) {
@@ -93,6 +97,14 @@ public class UsuarioService {
         autorizacaoService.verificarDono(id);
         return usuarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário com id: " + id + " não encontrado"));
+    }
+
+    // o limite do BCrypt é de 72 bytes, e acentos e emojis ocupam mais de um byte por caractere
+    private String codificarSenha(String senha) {
+        if (senha.getBytes(StandardCharsets.UTF_8).length > TAMANHO_MAXIMO_SENHA_BYTES) {
+            throw new RegraNegocioException("A senha é longa demais. Use menos caracteres, principalmente acentos e emojis.");
+        }
+        return passwordEncoder.encode(senha);
     }
 
     // o sistema não pode ficar sem nenhum ADMIN, senão ninguém mais gerencia usuários e categorias
