@@ -1,6 +1,8 @@
 package br.com.fiap.skilltrack_backend_java.skilltrack.model;
 
+import br.com.fiap.skilltrack_backend_java.skilltrack.model.enums.CorAvatar;
 import br.com.fiap.skilltrack_backend_java.skilltrack.model.enums.Perfil;
+import br.com.fiap.skilltrack_backend_java.skilltrack.model.enums.Tema;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
@@ -8,7 +10,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 
@@ -40,11 +42,26 @@ public class Usuario implements UserDetails {
     private Perfil perfil;
 
     @Column(name = "data_criacao", updatable = false)
-    private LocalDateTime dataCriacao;
+    private Instant dataCriacao;
+
+    // vai dentro do token: ao mudar, os tokens emitidos antes deixam de valer
+    @Column(name = "versao_token", nullable = false)
+    private int versaoToken;
+
+    @Column(length = 280)
+    private String bio;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cor_avatar", nullable = false, length = 20)
+    private CorAvatar corAvatar = CorAvatar.ESMERALDA;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private Tema tema = Tema.SISTEMA;
 
     @PrePersist
     protected void onCreate() {
-        this.dataCriacao = LocalDateTime.now();
+        this.dataCriacao = Instant.now();
     }
 
     @Override

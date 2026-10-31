@@ -4,6 +4,7 @@ import br.com.fiap.skilltrack_backend_java.skilltrack.model.enums.SkillLevel;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.Instant;
 import java.util.List;
 
 @Entity
@@ -43,4 +44,12 @@ public class Skill {
 
     @OneToMany(mappedBy = "skill", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Goal> goals;
+
+    @Column(name = "data_criacao", updatable = false)
+    private Instant dataCriacao;
+
+    @PrePersist
+    protected void onCreate() {
+        this.dataCriacao = Instant.now();
+    }
 }

@@ -32,21 +32,20 @@ public class SecurityFilter extends OncePerRequestFilter {
         var tokenJWT = recuperarToken(request);
         // token inválido/expirado não deve derrubar a requisição: segue sem autenticação
         // (rotas públicas como /auth/login continuam funcionando; as protegidas retornam 401)
-        var subject = tokenJWT != null ? tokenService.getSubjectOrNull(tokenJWT) : null;
-        if (subject != null) {
-            var usuarioOptional = repository.findByEmail(subject);
+        var dadosToken = tokenJWT != null ? tokenService.lerTokenOuNull(tokenJWT) : null;
+        if (dadosToken != null) {
+            // a versão muda quando a senha é trocada, e os tokens emitidos antes da troca deixam de valer
+            repository.findById(dadosToken.idUsuario())
+                    .filter(usuario -> usuario.getVersaoToken() == dadosToken.versao())
+                    .ifPresent(usuario -> {
+                        var authentication = new UsernamePasswordAuthenticationToken(
+                                usuario,
+                                null,
+                                usuario.getAuthorities()
+                        );
 
-            if (usuarioOptional.isPresent()) {
-                var usuario = usuarioOptional.get();
-
-                var authentication = new UsernamePasswordAuthenticationToken(
-                        usuario,
-                        null,
-                        usuario.getAuthorities()
-                );
-
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-            }
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                    });
         }
 
         filterChain.doFilter(request, response);

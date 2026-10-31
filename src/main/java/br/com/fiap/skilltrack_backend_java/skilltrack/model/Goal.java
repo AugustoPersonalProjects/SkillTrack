@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
 @Entity
@@ -40,8 +41,15 @@ public class Goal {
     @JoinColumn(name = "skill_id")
     private Skill skill;
 
+    @Column(name = "data_criacao", updatable = false)
+    private Instant dataCriacao;
+
+    @Column(name = "data_conclusao")
+    private Instant dataConclusao;
+
     @PrePersist
     protected void onCreate() {
+        this.dataCriacao = Instant.now();
         if (this.title == null && this.description != null) {
             this.title = this.description.length() > 150 ?
                     this.description.substring(0, 147) + "..." : this.description;

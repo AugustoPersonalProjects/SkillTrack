@@ -22,7 +22,7 @@ public class UsuarioRequestDTO {
     private String email;
 
     @NotBlank(message = "A senha é obrigatória")
-    @Size(min = 6, max = 150)
+    @Size(min = 6, max = 72, message = "A senha deve ter entre 6 e 72 caracteres")
     private String senha;
 
     // opcional: só é respeitado quando quem faz a requisição é ADMIN (padrão: USER)

@@ -4,8 +4,10 @@ import br.com.fiap.skilltrack_backend_java.skilltrack.dto.AutenticacaoDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.TokenDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.UsuarioRequestDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.model.Usuario;
+import br.com.fiap.skilltrack_backend_java.skilltrack.service.LimiteDeTentativasService;
 import br.com.fiap.skilltrack_backend_java.skilltrack.service.TokenService;
 import br.com.fiap.skilltrack_backend_java.skilltrack.service.UsuarioService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -26,10 +28,16 @@ public class AuthController {
     @Autowired
     private UsuarioService usuarioService;
 
+    @Autowired
+    private LimiteDeTentativasService limiteDeTentativas;
+
     @PostMapping("/login")
-    public ResponseEntity<TokenDTO> efetuarLogin(@RequestBody @Valid AutenticacaoDTO dados) {
+    public ResponseEntity<TokenDTO> efetuarLogin(@RequestBody @Valid AutenticacaoDTO dados, HttpServletRequest request) {
+        limiteDeTentativas.verificarLogin(request, dados.email());
+
         var authenticationToken = new UsernamePasswordAuthenticationToken(dados.email(), dados.senha());
         var authentication = manager.authenticate(authenticationToken);
+        limiteDeTentativas.liberarLogin(dados.email());
 
         var tokenJWT = tokenService.gerarToken((Usuario) authentication.getPrincipal());
         return ResponseEntity.ok(new TokenDTO(tokenJWT));
@@ -37,7 +45,9 @@ public class AuthController {
 
     // cadastro + login em um passo: retorna o token do novo usuário
     @PostMapping("/register")
-    public ResponseEntity<TokenDTO> registrar(@RequestBody @Valid UsuarioRequestDTO dados) {
+    public ResponseEntity<TokenDTO> registrar(@RequestBody @Valid UsuarioRequestDTO dados, HttpServletRequest request) {
+        limiteDeTentativas.verificarCadastro(request);
+
         var novoUsuario = usuarioService.cadastrar(dados);
         var tokenJWT = tokenService.gerarToken(novoUsuario);
         return ResponseEntity.ok(new TokenDTO(tokenJWT));

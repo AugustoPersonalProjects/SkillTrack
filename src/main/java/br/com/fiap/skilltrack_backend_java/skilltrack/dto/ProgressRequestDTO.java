@@ -17,9 +17,10 @@ public class ProgressRequestDTO {
     @NotNull(message = "O ID da habilidade é obrigatório")
     private Long skillId;
 
+    @NotNull(message = "A porcentagem é obrigatória")
     @Min(value = 0, message = "A porcentagem mínima é 0%")
     @Max(value = 100, message = "A porcentagem máxima é 100%")
-    private int percentage;
+    private Integer percentage;
 
     private LocalDate date;
 }
