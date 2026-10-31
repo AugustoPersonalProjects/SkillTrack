@@ -15,17 +15,21 @@ import java.time.temporal.ChronoUnit;
 public class TokenService {
 
     private static final String ISSUER = "API SkillTrack";
+    private static final String CLAIM_VERSAO = "versao";
 
     @Value("${api.security.token.secret}")
     private String secret;
+
+    public record DadosToken(Long idUsuario, int versao) {}
 
     public String gerarToken(Usuario usuario) {
         try {
             var algoritmo = Algorithm.HMAC256(secret);
             return JWT.create()
                     .withIssuer(ISSUER)
-                    .withSubject(usuario.getEmail())
+                    .withSubject(String.valueOf(usuario.getId()))
                     .withClaim("id", usuario.getId())
+                    .withClaim(CLAIM_VERSAO, usuario.getVersaoToken())
                     .withExpiresAt(dataExpiracao())
                     .sign(algoritmo);
         } catch (JWTCreationException exception){
@@ -33,24 +37,17 @@ public class TokenService {
         }
     }
 
-    public String getSubject(String tokenJWT) {
+    // null quando o token é inválido, expirado ou do formato antigo, que usava o e-mail como subject
+    public DadosToken lerTokenOuNull(String tokenJWT) {
         try {
             var algoritmo = Algorithm.HMAC256(secret);
-            return JWT.require(algoritmo)
+            var token = JWT.require(algoritmo)
                     .withIssuer(ISSUER)
+                    .withClaimPresence(CLAIM_VERSAO)
                     .build()
-                    .verify(tokenJWT)
-                    .getSubject();
-
-        } catch (JWTVerificationException exception){
-            throw new RuntimeException("Token JWT inválido ou expirado!");
-        }
-    }
-
-    public String getSubjectOrNull(String tokenJWT) {
-        try {
-            return getSubject(tokenJWT);
-        } catch (RuntimeException exception) {
+                    .verify(tokenJWT);
+            return new DadosToken(Long.valueOf(token.getSubject()), token.getClaim(CLAIM_VERSAO).asInt());
+        } catch (JWTVerificationException | NumberFormatException exception) {
             return null;
         }
     }

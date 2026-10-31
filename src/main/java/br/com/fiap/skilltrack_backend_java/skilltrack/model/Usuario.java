@@ -42,6 +42,10 @@ public class Usuario implements UserDetails {
     @Column(name = "data_criacao", updatable = false)
     private LocalDateTime dataCriacao;
 
+    // vai dentro do token: ao mudar, os tokens emitidos antes deixam de valer
+    @Column(name = "versao_token", nullable = false)
+    private int versaoToken;
+
     @PrePersist
     protected void onCreate() {
         this.dataCriacao = LocalDateTime.now();

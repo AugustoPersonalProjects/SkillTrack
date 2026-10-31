@@ -71,7 +71,7 @@ public class UsuarioService {
         usuarioAtual.setNome(usuarioUpdateDTO.getNome());
         usuarioAtual.setEmail(usuarioUpdateDTO.getEmail());
         if (usuarioUpdateDTO.getSenha() != null && !usuarioUpdateDTO.getSenha().isBlank()) {
-            usuarioAtual.setSenha(codificarSenha(usuarioUpdateDTO.getSenha()));
+            definirSenha(usuarioAtual, usuarioUpdateDTO.getSenha());
         }
         var novoPerfil = usuarioUpdateDTO.getPerfil();
         if (autorizacaoService.isAdmin() && novoPerfil != null && novoPerfil != usuarioAtual.getPerfil()) {
@@ -97,6 +97,12 @@ public class UsuarioService {
         autorizacaoService.verificarDono(id);
         return usuarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário com id: " + id + " não encontrado"));
+    }
+
+    // trocar a senha encerra as sessões abertas, inclusive a de quem roubou um token
+    private void definirSenha(Usuario usuario, String novaSenha) {
+        usuario.setSenha(codificarSenha(novaSenha));
+        usuario.setVersaoToken(usuario.getVersaoToken() + 1);
     }
 
     // o limite do BCrypt é de 72 bytes, e acentos e emojis ocupam mais de um byte por caractere
