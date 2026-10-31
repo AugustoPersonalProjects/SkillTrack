@@ -45,19 +45,35 @@ class AdminTests extends TesteDeIntegracao {
     @Test
     void resumoTrazTotaisEContagensPorUsuario() throws Exception {
         var idSkill = criarSkill(tokenAna, idAna, "Java");
-        criarMeta(tokenAna, idAna, idSkill, "Estudar");
+        var idMeta = criarMeta(tokenAna, idAna, idSkill, "Estudar");
+        criarMeta(tokenAna, idAna, idSkill, "Praticar");
+        mvc.perform(post("/goals/" + idMeta + "/complete").header("Authorization", bearer(tokenAna)))
+                .andExpect(status().is2xxSuccessful());
+        criarProgresso(tokenAna, idSkill, 10);
 
         mvc.perform(get("/admin/resumo").header("Authorization", bearer(tokenAdmin)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalUsuarios").value(2))
                 .andExpect(jsonPath("$.totalAdmins").value(1))
                 .andExpect(jsonPath("$.totalSkills").value(1))
-                .andExpect(jsonPath("$.totalGoals").value(1))
-                .andExpect(jsonPath("$.completedGoals").value(0))
-                .andExpect(jsonPath("$.usuarios[?(@.email == 'ana@email.com')].totalSkills").value(1))
-                .andExpect(jsonPath("$.usuarios[?(@.email == 'ana@email.com')].totalGoals").value(1))
-                .andExpect(jsonPath("$.usuarios[?(@.email == 'ana@email.com')].cor_avatar").value("ESMERALDA"))
-                .andExpect(jsonPath("$.usuarios[?(@.email == 'admin@email.com')].totalSkills").value(0));
+                .andExpect(jsonPath("$.totalGoals").value(2))
+                .andExpect(jsonPath("$.completedGoals").value(1))
+                .andExpect(jsonPath("$.totalProgress").value(1))
+                .andExpect(jsonPath("$.totalCategories").value(5))
+                // os usuários vêm em ordem de cadastro
+                .andExpect(jsonPath("$.usuarios[0].email").value("admin@email.com"))
+                .andExpect(jsonPath("$.usuarios[0].totalSkills").value(0))
+                .andExpect(jsonPath("$.usuarios[0].totalGoals").value(0))
+                .andExpect(jsonPath("$.usuarios[0].completedGoals").value(0))
+                .andExpect(jsonPath("$.usuarios[1].id_usuario").value(idAna))
+                .andExpect(jsonPath("$.usuarios[1].nome").value("Ana"))
+                .andExpect(jsonPath("$.usuarios[1].email").value("ana@email.com"))
+                .andExpect(jsonPath("$.usuarios[1].perfil").value("USER"))
+                .andExpect(jsonPath("$.usuarios[1].data_criacao").isNotEmpty())
+                .andExpect(jsonPath("$.usuarios[1].cor_avatar").value("ESMERALDA"))
+                .andExpect(jsonPath("$.usuarios[1].totalSkills").value(1))
+                .andExpect(jsonPath("$.usuarios[1].totalGoals").value(2))
+                .andExpect(jsonPath("$.usuarios[1].completedGoals").value(1));
     }
 
     @Test

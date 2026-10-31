@@ -22,9 +22,14 @@ public interface GoalRepository extends JpaRepository<Goal, Long> {
 
     long countByCompletedTrue();
 
-    // id do usuário, total de metas e metas concluídas
-    @Query("SELECT g.user.id, COUNT(g), SUM(CASE WHEN g.completed = true THEN 1 ELSE 0 END) " +
+    interface TotalPorUsuario {
+        Long getIdUsuario();
+        long getTotal();
+        long getConcluidas();
+    }
+
+    @Query("SELECT g.user.id AS idUsuario, COUNT(g) AS total, SUM(CASE WHEN g.completed = true THEN 1 ELSE 0 END) AS concluidas " +
             "FROM Goal g WHERE g.user IS NOT NULL GROUP BY g.user.id")
-    List<Object[]> countGroupedByUser();
+    List<TotalPorUsuario> countGroupedByUser();
 
 }

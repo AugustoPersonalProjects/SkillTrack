@@ -16,7 +16,11 @@ public interface SkillRepository extends JpaRepository<Skill, Long> {
     long countByUserId(Long userId);
     List<Skill> findByUserIdOrderByNameAsc(Long userId);
 
-    // id do usuário e total de skills
-    @Query("SELECT s.user.id, COUNT(s) FROM Skill s WHERE s.user IS NOT NULL GROUP BY s.user.id")
-    List<Object[]> countGroupedByUser();
+    interface TotalPorUsuario {
+        Long getIdUsuario();
+        long getTotal();
+    }
+
+    @Query("SELECT s.user.id AS idUsuario, COUNT(s) AS total FROM Skill s WHERE s.user IS NOT NULL GROUP BY s.user.id")
+    List<TotalPorUsuario> countGroupedByUser();
 }
