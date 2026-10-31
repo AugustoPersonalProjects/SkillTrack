@@ -13,6 +13,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
+
 import static org.hamcrest.Matchers.contains;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -79,6 +81,33 @@ class DashboardTests {
                 .andExpect(jsonPath("$.totalSkills").value(0))
                 .andExpect(jsonPath("$.averageProgress").value(0.0))
                 .andExpect(jsonPath("$.skillNames").isEmpty());
+    }
+
+    @Test
+    void proximasMetasMostraSoAsPendentes() throws Exception {
+        var idJava = criarSkill(tokenAna, idAna, "Java");
+        var prazo = LocalDate.now().plusDays(1);
+        for (int i = 0; i < 5; i++) {
+            var idConcluida = criarMeta(idJava, "Concluída " + i, prazo);
+            mvc.perform(post("/goals/" + idConcluida + "/complete").header("Authorization", bearer(tokenAna)))
+                    .andExpect(status().isNoContent());
+        }
+        criarMeta(idJava, "Pendente", prazo.plusDays(30));
+
+        mvc.perform(get("/dashboard").header("Authorization", bearer(tokenAna)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalGoals").value(6))
+                .andExpect(jsonPath("$.goals[*].title", contains("Pendente")));
+    }
+
+    private Number criarMeta(Long skillId, String titulo, LocalDate prazo) throws Exception {
+        var resposta = mvc.perform(post("/goals").header("Authorization", bearer(tokenAna))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"" + titulo + "\",\"deadline\":\"" + prazo + "\",\"skill_id\":" + skillId
+                                + ",\"user_id\":" + idAna + "}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return JsonPath.read(resposta, "$.id_goal");
     }
 
     private String registrar(String nome, String email) throws Exception {
