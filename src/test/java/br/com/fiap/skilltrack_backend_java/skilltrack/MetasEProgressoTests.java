@@ -2,6 +2,8 @@ package br.com.fiap.skilltrack_backend_java.skilltrack;
 
 import br.com.fiap.skilltrack_backend_java.skilltrack.config.ClockConfig;
 import br.com.fiap.skilltrack_backend_java.skilltrack.model.Category;
+import br.com.fiap.skilltrack_backend_java.skilltrack.model.Usuario;
+import br.com.fiap.skilltrack_backend_java.skilltrack.model.enums.Perfil;
 import br.com.fiap.skilltrack_backend_java.skilltrack.repository.CategoryRepository;
 import br.com.fiap.skilltrack_backend_java.skilltrack.repository.GoalRepository;
 import br.com.fiap.skilltrack_backend_java.skilltrack.repository.UsuarioRepository;
@@ -15,6 +17,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -55,6 +58,9 @@ class MetasEProgressoTests {
 
     @Autowired
     private GoalRepository goalRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     private String tokenAna;
     private Long idAna;
@@ -119,6 +125,42 @@ class MetasEProgressoTests {
                         .content("{\"skill_id\":" + idSkill + ",\"percentage\":10}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.date").value("2026-10-31"));
+    }
+
+    @Test
+    void adminNaoVinculaMetaASkillDeOutroUsuario() throws Exception {
+        var tokenBruno = registrar("Bruno", "bruno@email.com");
+        var idBruno = usuarioRepository.findByEmail("bruno@email.com").orElseThrow().getId();
+        var idSkillBruno = criarSkill(tokenBruno, idBruno, "Go");
+        var idMetaAna = criarMetaAtrasada("2026-10-31");
+        var tokenAdmin = criarAdmin();
+        var metaNaSkillDoBruno = "{\"title\":\"Meta\",\"skill_id\":" + idSkillBruno + ",\"user_id\":" + idAna + "}";
+
+        mvc.perform(post("/goals").header("Authorization", bearer(tokenAdmin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(metaNaSkillDoBruno))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("A skill informada não pertence a este usuário."));
+        mvc.perform(put("/goals/" + idMetaAna).header("Authorization", bearer(tokenAdmin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(metaNaSkillDoBruno))
+                .andExpect(status().isBadRequest());
+    }
+
+    private String criarAdmin() throws Exception {
+        var admin = new Usuario();
+        admin.setNome("Admin");
+        admin.setEmail("admin@email.com");
+        admin.setSenha(passwordEncoder.encode("123456"));
+        admin.setPerfil(Perfil.ADMIN);
+        usuarioRepository.save(admin);
+
+        var resposta = mvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"admin@email.com\",\"senha\":\"123456\"}"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        return JsonPath.read(resposta, "$.token");
     }
 
     // o prazo passado é gravado direto no banco porque a API não permite criá-lo

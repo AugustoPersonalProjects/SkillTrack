@@ -5,6 +5,8 @@ import br.com.fiap.skilltrack_backend_java.skilltrack.dto.GoalResponseDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.exceptions.RegraNegocioException;
 import br.com.fiap.skilltrack_backend_java.skilltrack.mapper.GoalMapper;
 import br.com.fiap.skilltrack_backend_java.skilltrack.model.Goal;
+import br.com.fiap.skilltrack_backend_java.skilltrack.model.Skill;
+import br.com.fiap.skilltrack_backend_java.skilltrack.model.Usuario;
 import br.com.fiap.skilltrack_backend_java.skilltrack.repository.GoalRepository;
 import br.com.fiap.skilltrack_backend_java.skilltrack.repository.SkillRepository;
 import br.com.fiap.skilltrack_backend_java.skilltrack.repository.UsuarioRepository;
@@ -62,6 +64,7 @@ public class GoalService {
 
         var usuario = usuarioRepository.findById(dto.getUserId())
                 .orElseThrow(() -> new EntityNotFoundException("Usuário com id: " + dto.getUserId() + " não encontrado"));
+        garantirMesmoDono(skill, usuario);
 
         Goal goal = GoalMapper.toEntity(dto, skill, usuario);
 
@@ -97,6 +100,7 @@ public class GoalService {
             autorizacaoService.verificarDono(novaSkill.getUser());
             goalAtual.setSkill(novaSkill);
         }
+        garantirMesmoDono(goalAtual.getSkill(), goalAtual.getUser());
 
         var atualizado = goalRepository.save(goalAtual);
         return GoalMapper.toResponseDTO(atualizado);
@@ -125,6 +129,14 @@ public class GoalService {
     private void validarPrazo(LocalDate prazo) {
         if (prazo != null && prazo.isBefore(LocalDate.now(clock))) {
             throw new RegraNegocioException("A data limite deve ser hoje ou uma data futura.");
+        }
+    }
+
+    // a meta e a skill dela são do mesmo usuário, mesmo quando quem altera é um ADMIN
+    private void garantirMesmoDono(Skill skill, Usuario usuario) {
+        var donoDaSkill = skill != null ? skill.getUser() : null;
+        if (donoDaSkill != null && usuario != null && !donoDaSkill.getId().equals(usuario.getId())) {
+            throw new RegraNegocioException("A skill informada não pertence a este usuário.");
         }
     }
 
