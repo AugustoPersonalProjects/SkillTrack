@@ -3,7 +3,6 @@ package br.com.fiap.skilltrack_backend_java.skilltrack.dto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.AssertTrue;
-import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
@@ -21,7 +20,6 @@ public class GoalRequestDTO {
     @Size(max = 255)
     private String description;
 
-    @FutureOrPresent(message = "A data limite deve ser futura ou presente")
     private LocalDate deadline;
 
     @JsonProperty("skill_id")

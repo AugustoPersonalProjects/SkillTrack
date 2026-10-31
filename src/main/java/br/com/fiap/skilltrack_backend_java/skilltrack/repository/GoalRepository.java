@@ -15,7 +15,7 @@ public interface GoalRepository extends JpaRepository<Goal, Long> {
     Page<Goal> findAllByOrderByIdAsc(Pageable pageable);
     Page<Goal> findByUserIdOrderByIdAsc(Long userId, Pageable pageable);
     List<Goal> findBySkillIdOrderByDeadlineAsc(Long skillId);
-    List<Goal> findTop5ByUserIdOrderByDeadlineAsc(Long userId);
+    List<Goal> findTop5ByUserIdAndCompletedFalseOrderByDeadlineAsc(Long userId);
     long countByUserId(Long userId);
     @Query("SELECT g FROM Goal g WHERE g.user.id = :userId")
     List<Goal> findByUserId(@Param("userId") Long userId);

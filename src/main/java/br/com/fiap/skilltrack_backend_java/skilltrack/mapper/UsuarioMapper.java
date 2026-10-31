@@ -14,7 +14,10 @@ public class UsuarioMapper {
                 usuario.getNome(),
                 usuario.getEmail(),
                 usuario.getPerfil(),
-                usuario.getDataCriacao()
+                usuario.getDataCriacao(),
+                usuario.getBio(),
+                usuario.getCorAvatar(),
+                usuario.getTema()
         );
     }
 

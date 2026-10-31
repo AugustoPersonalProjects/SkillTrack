@@ -52,8 +52,8 @@ public class DashboardController {
         dashboard.put("skillNames", skills.stream().map(Skill::getName).toList());
         dashboard.put("skillProgressValues", skillProgressValues);
 
-        // Últimas metas e progressos
-        dashboard.put("goals", goalRepository.findTop5ByUserIdOrderByDeadlineAsc(userId).stream().map(GoalMapper::toResponseDTO).toList());
+        // Próximas metas pendentes e últimos progressos
+        dashboard.put("goals", goalRepository.findTop5ByUserIdAndCompletedFalseOrderByDeadlineAsc(userId).stream().map(GoalMapper::toResponseDTO).toList());
         dashboard.put("progressList", progressRepository.findTop5BySkillUserIdOrderByDateDescIdDesc(userId).stream().map(ProgressMapper::toResponseDTO).toList());
 
         return ResponseEntity.ok(dashboard);

@@ -1,7 +1,10 @@
 # 🧠 SkillTrack — Sistema de Gestão de Habilidades Profissionais
 
+[![CI](https://github.com/AugustoPersonalProjects/SkillTrack/actions/workflows/ci.yml/badge.svg)](https://github.com/AugustoPersonalProjects/SkillTrack/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/AugustoPersonalProjects/SkillTrack/actions/workflows/codeql.yml/badge.svg)](https://github.com/AugustoPersonalProjects/SkillTrack/actions/workflows/codeql.yml)
+
 ![Java](https://img.shields.io/badge/Java-21-red?style=for-the-badge&logo=openjdk)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.6-brightgreen?style=for-the-badge&logo=springboot)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.16-brightgreen?style=for-the-badge&logo=springboot)
 ![MySQL](https://img.shields.io/badge/Database-MySQL%208-blue?style=for-the-badge&logo=mysql)
 ![Maven](https://img.shields.io/badge/Build-Maven-blue?style=for-the-badge&logo=apachemaven)
 ![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
@@ -32,7 +35,9 @@ O **SkillTrack** foi criado para resolver esse problema, fornecendo uma platafor
 
 - 👤 **Gestão de Usuários**
   - Registro e autenticação via Spring Security.
-  - Perfis com nome, e-mail e data de criação.
+  - Perfil com nome, e-mail, bio, cor do avatar e tema, nas rotas `/usuarios/me`. O tema fica salvo na conta e acompanha o usuário em qualquer dispositivo.
+  - Alterar o próprio e-mail ou a própria senha exige a senha atual. Trocar a senha encerra as sessões abertas nos outros dispositivos.
+  - Limite de tentativas no login, no cadastro e na confirmação da senha atual, com resposta `429` e o cabeçalho `Retry-After`.
 
 - 🧩 **Cadastro de Habilidades (Skills)**
   - Associação a categorias (ex: Programação, Design, Comunicação).
@@ -81,7 +86,7 @@ O **SkillTrack** foi criado para resolver esse problema, fornecendo uma platafor
 | **Validação** | Jakarta Validation (Bean Validation) |
 | **Documentação** | Swagger / OpenAPI |
 | **Gerenciador de Dependências** | Maven |
-| **Testes** | JUnit 5, Mockito |
+| **Testes** | JUnit 5, MockMvc, Testcontainers (MySQL) |
 
 ---
 
@@ -134,6 +139,8 @@ docker compose up -d        # sobe o MySQL em localhost:3307
 
 Para recriar o banco do zero: `docker compose down -v && docker compose up -d`.
 
+O `spring-boot:run` ativa o perfil `dev`, que define um `JWT_SECRET` local. Ao iniciar a aplicação pela IDE, ative esse perfil na configuração de execução.
+
 #### Variáveis de ambiente
 
 | Variável | Padrão (dev) | Descrição |
@@ -141,15 +148,27 @@ Para recriar o banco do zero: `docker compose down -v && docker compose up -d`.
 | `DB_URL` | `jdbc:mysql://localhost:3307/skilltrack?...` | URL JDBC do MySQL |
 | `DB_USERNAME` | `skilltrack` | Usuário do banco |
 | `DB_PASSWORD` | `skilltrack` | Senha do banco |
-| `JWT_SECRET` | valor de dev | **Obrigatório trocar em produção** |
+| `JWT_SECRET` | só no perfil `dev` | **Obrigatória em produção**: sem ela a aplicação não inicia. Use um valor longo e aleatório |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:*,http://127.0.0.1:*` | Origens do front-end (separadas por vírgula) |
-| `ADMIN_EMAIL` | vazio | E-mail do ADMIN inicial. Se o usuário já existir, é promovido a ADMIN |
-| `ADMIN_PASSWORD` | vazio | Senha do ADMIN inicial (mínimo de 6 caracteres), usada só se ele ainda não existir |
+| `ADMIN_EMAIL` | vazio | E-mail do primeiro ADMIN. Só é usado enquanto o sistema não tem nenhum ADMIN |
+| `ADMIN_PASSWORD` | vazio | Senha do primeiro ADMIN (mínimo de 6 caracteres). Se a conta já existir, precisa ser a senha dela |
 | `ADMIN_NAME` | `Administrador` | Nome do ADMIN inicial |
+| `RATE_LIMIT_ENABLED` | `true`; `false` no perfil `dev` | Liga o limite de tentativas. Os testes de ponta a ponta desligam, porque criam várias contas a partir do mesmo IP |
+| `CLIENT_IP_HEADER` | vazio | Cabeçalho com o IP real do cliente quando a API está atrás de um proxy. Vazio usa o IP da conexão. Informe somente um cabeçalho que o cliente não consiga falsificar |
 
 Nunca coloque credenciais reais no `application.properties`; use as variáveis acima.
 
 > ⚠️ Não altere uma migração que já foi aplicada. Para mudar o schema, crie um novo arquivo `V2__descricao.sql`, `V3__...` etc.
+
+### 🧪 Testes
+
+```bash
+./mvnw test
+```
+
+Os testes sobem a API completa, com as migrações e a configuração de produção, em um MySQL real criado pelo [Testcontainers](https://testcontainers.com). Por isso o Docker precisa estar ligado, mas não é necessário rodar o `docker compose`.
+
+A cada push em `main` e em cada pull request, o GitHub Actions roda os testes, constrói a imagem Docker e faz a análise de segurança com o CodeQL. O Dependabot propõe as atualizações de dependências.
 
 
 ### ☁️ Deploy (Render + Aiven + Vercel)
@@ -186,12 +205,15 @@ DB_PASSWORD=<senha do Aiven>
 JWT_SECRET=<valor longo e aleatório>
 CORS_ALLOWED_ORIGINS=https://skill-track-front-end.vercel.app
 ADMIN_EMAIL=<seu e-mail>
-ADMIN_PASSWORD=<senha forte, usada só se o usuário ainda não existir>
+ADMIN_PASSWORD=<senha forte; se a conta já existir, a senha dela>
+CLIENT_IP_HEADER=CF-Connecting-IP
 ```
 
 A porta é definida pelo Render na variável `PORT`, que a aplicação já utiliza. As migrações do Flyway criam as tabelas e as categorias padrão na primeira inicialização.
 
-Para ter acesso ao painel de administração, defina `ADMIN_EMAIL`. Se já existir uma conta com esse e-mail, ela é promovida a ADMIN na próxima inicialização, sem trocar a senha. É preciso sair e entrar de novo no front para o menu de administração aparecer.
+O Render recebe as requisições pela Cloudflare, e a conexão que chega à API vem de um proxy interno. Sem `CLIENT_IP_HEADER`, todos os clientes aparecem com o mesmo IP e dividem o mesmo limite de tentativas. O `X-Forwarded-For` não serve para isso, porque o Render mantém o valor enviado pelo cliente.
+
+Para criar o primeiro acesso ao painel de administração, defina `ADMIN_EMAIL` e `ADMIN_PASSWORD`. Enquanto o sistema não tiver nenhum ADMIN, a aplicação cria essa conta ao iniciar. Se o e-mail já estiver cadastrado, a conta só é promovida quando `ADMIN_PASSWORD` for a senha dela, porque o cadastro público não confirma quem é o dono do e-mail. Depois disso, os perfis são geridos pelo painel. É preciso sair e entrar de novo no front para o menu de administração aparecer.
 
 > ℹ️ No plano gratuito, o Render suspende o serviço após ~15 minutos sem uso, e a primeira requisição seguinte pode levar até um minuto.
 
