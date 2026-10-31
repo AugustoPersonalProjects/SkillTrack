@@ -3,27 +3,14 @@ package br.com.fiap.skilltrack_backend_java.skilltrack;
 import br.com.fiap.skilltrack_backend_java.skilltrack.config.AdminInitializer;
 import br.com.fiap.skilltrack_backend_java.skilltrack.model.Usuario;
 import br.com.fiap.skilltrack_backend_java.skilltrack.model.enums.Perfil;
-import br.com.fiap.skilltrack_backend_java.skilltrack.repository.UsuarioRepository;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.annotation.DirtiesContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class AdminInitializerTests {
+class AdminInitializerTests extends TesteDeIntegracao {
 
     private static final String EMAIL = "dono@email.com";
     private static final String SENHA = "senhaDoDono";
-
-    @Autowired
-    private UsuarioRepository usuarioRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
 
     @Test
     void criaOAdminQuandoOEmailNaoExiste() {

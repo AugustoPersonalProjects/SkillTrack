@@ -1,17 +1,8 @@
 package br.com.fiap.skilltrack_backend_java.skilltrack;
 
-import br.com.fiap.skilltrack_backend_java.skilltrack.model.Category;
-import br.com.fiap.skilltrack_backend_java.skilltrack.repository.CategoryRepository;
-import br.com.fiap.skilltrack_backend_java.skilltrack.repository.UsuarioRepository;
-import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
 
@@ -21,32 +12,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class DashboardTests {
-
-    @Autowired
-    private MockMvc mvc;
-
-    @Autowired
-    private UsuarioRepository usuarioRepository;
-
-    @Autowired
-    private CategoryRepository categoryRepository;
+class DashboardTests extends TesteDeIntegracao {
 
     private String tokenAna;
     private Long idAna;
-    private Long idCategoria;
 
     @BeforeEach
     void setUp() throws Exception {
         tokenAna = registrar("Ana", "ana@email.com");
-        idAna = usuarioRepository.findByEmail("ana@email.com").orElseThrow().getId();
-
-        var categoria = new Category();
-        categoria.setName("Backend");
-        idCategoria = categoryRepository.save(categoria).getId();
+        idAna = idDoUsuario("ana@email.com");
     }
 
     @Test
@@ -61,7 +35,7 @@ class DashboardTests {
 
         // dados de outro usuário não entram no dashboard da Ana
         var tokenBruno = registrar("Bruno", "bruno@email.com");
-        var idBruno = usuarioRepository.findByEmail("bruno@email.com").orElseThrow().getId();
+        var idBruno = idDoUsuario("bruno@email.com");
         registrarProgresso(tokenBruno, criarSkill(tokenBruno, idBruno, "Go"), 100, "2026-01-03");
 
         mvc.perform(get("/dashboard").header("Authorization", bearer(tokenAna)))
@@ -86,13 +60,12 @@ class DashboardTests {
     @Test
     void proximasMetasMostraSoAsPendentes() throws Exception {
         var idJava = criarSkill(tokenAna, idAna, "Java");
-        var prazo = LocalDate.now().plusDays(1);
         for (int i = 0; i < 5; i++) {
-            var idConcluida = criarMeta(idJava, "Concluída " + i, prazo);
+            var idConcluida = criarMeta(tokenAna, idAna, idJava, "Concluída " + i);
             mvc.perform(post("/goals/" + idConcluida + "/complete").header("Authorization", bearer(tokenAna)))
                     .andExpect(status().isNoContent());
         }
-        criarMeta(idJava, "Pendente", prazo.plusDays(30));
+        criarMeta(tokenAna, idAna, idJava, "Pendente");
 
         mvc.perform(get("/dashboard").header("Authorization", bearer(tokenAna)))
                 .andExpect(status().isOk())
@@ -100,34 +73,15 @@ class DashboardTests {
                 .andExpect(jsonPath("$.goals[*].title", contains("Pendente")));
     }
 
-    private Number criarMeta(Long skillId, String titulo, LocalDate prazo) throws Exception {
-        var resposta = mvc.perform(post("/goals").header("Authorization", bearer(tokenAna))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"title\":\"" + titulo + "\",\"deadline\":\"" + prazo + "\",\"skill_id\":" + skillId
-                                + ",\"user_id\":" + idAna + "}"))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        return JsonPath.read(resposta, "$.id_goal");
-    }
+    @Test
+    void proximasMetasOrdenaPeloPrazoMaisProximo() throws Exception {
+        var idJava = criarSkill(tokenAna, idAna, "Java");
+        var hoje = LocalDate.now();
+        criarMetaComPrazo(idJava, "Depois", hoje.plusDays(10));
+        criarMetaComPrazo(idJava, "Antes", hoje.plusDays(1));
 
-    private String registrar(String nome, String email) throws Exception {
-        var resposta = mvc.perform(post("/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nome\":\"" + nome + "\",\"email\":\"" + email + "\",\"senha\":\"123456\"}"))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        return JsonPath.read(resposta, "$.token");
-    }
-
-    private Long criarSkill(String token, Long userId, String nome) throws Exception {
-        var resposta = mvc.perform(post("/api/skills").header("Authorization", bearer(token))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"" + nome + "\",\"categoryId\":" + idCategoria
-                                + ",\"level\":\"BEGINNER\",\"userId\":" + userId + "}"))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        Number id = JsonPath.read(resposta, "$.id_skill");
-        return id.longValue();
+        mvc.perform(get("/dashboard").header("Authorization", bearer(tokenAna)))
+                .andExpect(jsonPath("$.goals[*].title", contains("Antes", "Depois")));
     }
 
     private void registrarProgresso(String token, Long skillId, int porcentagem, String data) throws Exception {
@@ -137,7 +91,11 @@ class DashboardTests {
                 .andExpect(status().isCreated());
     }
 
-    private String bearer(String token) {
-        return "Bearer " + token;
+    private void criarMetaComPrazo(Long skillId, String titulo, LocalDate prazo) throws Exception {
+        mvc.perform(post("/goals").header("Authorization", bearer(tokenAna))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"" + titulo + "\",\"deadline\":\"" + prazo + "\",\"skill_id\":" + skillId
+                                + ",\"user_id\":" + idAna + "}"))
+                .andExpect(status().isCreated());
     }
 }

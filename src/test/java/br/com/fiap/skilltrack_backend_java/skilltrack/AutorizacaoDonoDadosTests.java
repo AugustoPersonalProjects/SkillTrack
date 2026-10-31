@@ -1,63 +1,32 @@
 package br.com.fiap.skilltrack_backend_java.skilltrack;
 
-import br.com.fiap.skilltrack_backend_java.skilltrack.model.Category;
-import br.com.fiap.skilltrack_backend_java.skilltrack.model.Usuario;
-import br.com.fiap.skilltrack_backend_java.skilltrack.model.enums.Perfil;
-import br.com.fiap.skilltrack_backend_java.skilltrack.repository.CategoryRepository;
-import br.com.fiap.skilltrack_backend_java.skilltrack.repository.UsuarioRepository;
-import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.web.servlet.MockMvc;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class AutorizacaoDonoDadosTests {
-
-    @Autowired
-    private MockMvc mvc;
-
-    @Autowired
-    private UsuarioRepository usuarioRepository;
-
-    @Autowired
-    private CategoryRepository categoryRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+class AutorizacaoDonoDadosTests extends TesteDeIntegracao {
 
     private String tokenAna;
     private String tokenBruno;
     private Long idAna;
     private Long idBruno;
-    private Long idCategoria;
 
     @BeforeEach
     void setUp() throws Exception {
         tokenAna = registrar("Ana", "ana@email.com");
         tokenBruno = registrar("Bruno", "bruno@email.com");
-        idAna = usuarioRepository.findByEmail("ana@email.com").orElseThrow().getId();
-        idBruno = usuarioRepository.findByEmail("bruno@email.com").orElseThrow().getId();
-
-        var categoria = new Category();
-        categoria.setName("Backend");
-        idCategoria = categoryRepository.save(categoria).getId();
+        idAna = idDoUsuario("ana@email.com");
+        idBruno = idDoUsuario("bruno@email.com");
     }
 
     @Test
     void usuarioNaoAcessaSkillsDeOutroUsuario() throws Exception {
-        var idSkill = criarSkill(tokenAna, idAna);
+        var idSkill = criarSkill(tokenAna, idAna, "Java");
 
         mvc.perform(get("/api/skills/" + idSkill).header("Authorization", bearer(tokenBruno)))
                 .andExpect(status().isForbidden());
@@ -74,18 +43,31 @@ class AutorizacaoDonoDadosTests {
     }
 
     @Test
+    void usuarioNaoAlteraSkillDeOutroUsuario() throws Exception {
+        var idSkill = criarSkill(tokenAna, idAna, "Java");
+
+        mvc.perform(put("/api/skills/" + idSkill).header("Authorization", bearer(tokenBruno))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(skillJson(idBruno, "Alterada")))
+                .andExpect(status().isForbidden());
+
+        mvc.perform(get("/api/skills/" + idSkill).header("Authorization", bearer(tokenAna)))
+                .andExpect(jsonPath("$.name").value("Java"));
+    }
+
+    @Test
     void usuarioNaoCriaRegistrosEmNomeDeOutroUsuario() throws Exception {
-        var idSkillAna = criarSkill(tokenAna, idAna);
+        var idSkillAna = criarSkill(tokenAna, idAna, "Java");
 
         mvc.perform(post("/api/skills").header("Authorization", bearer(tokenBruno))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(skillJson(idAna)))
+                        .content(skillJson(idAna, "Java")))
                 .andExpect(status().isForbidden());
 
         // meta do Bruno vinculada à skill da Ana
         mvc.perform(post("/goals").header("Authorization", bearer(tokenBruno))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"title\":\"Meta\",\"skill_id\":" + idSkillAna + ",\"user_id\":" + idBruno + "}"))
+                        .content(metaJson(idBruno, idSkillAna, "Meta")))
                 .andExpect(status().isForbidden());
 
         mvc.perform(post("/progress").header("Authorization", bearer(tokenBruno))
@@ -96,14 +78,11 @@ class AutorizacaoDonoDadosTests {
 
     @Test
     void usuarioNaoAcessaMetasDeOutroUsuario() throws Exception {
-        var idSkill = criarSkill(tokenAna, idAna);
-        var resposta = mvc.perform(post("/goals").header("Authorization", bearer(tokenAna))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"title\":\"Meta\",\"skill_id\":" + idSkill + ",\"user_id\":" + idAna + "}"))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        Number idGoal = JsonPath.read(resposta, "$.id_goal");
+        var idSkill = criarSkill(tokenAna, idAna, "Java");
+        var idGoal = criarMeta(tokenAna, idAna, idSkill, "Meta");
 
+        mvc.perform(get("/goals/" + idGoal).header("Authorization", bearer(tokenBruno)))
+                .andExpect(status().isForbidden());
         mvc.perform(get("/goals/user/" + idAna).header("Authorization", bearer(tokenBruno)))
                 .andExpect(status().isForbidden());
         mvc.perform(post("/goals/" + idGoal + "/complete").header("Authorization", bearer(tokenBruno)))
@@ -112,6 +91,56 @@ class AutorizacaoDonoDadosTests {
                 .andExpect(jsonPath("$.totalElements").value(0));
         mvc.perform(get("/goals/user/" + idAna).header("Authorization", bearer(tokenAna)))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void usuarioNaoAlteraNemExcluiMetaDeOutroUsuario() throws Exception {
+        var idSkillAna = criarSkill(tokenAna, idAna, "Java");
+        var idSkillBruno = criarSkill(tokenBruno, idBruno, "Go");
+        var idGoal = criarMeta(tokenAna, idAna, idSkillAna, "Meta");
+
+        mvc.perform(put("/goals/" + idGoal).header("Authorization", bearer(tokenBruno))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(metaJson(idBruno, idSkillBruno, "Alterada")))
+                .andExpect(status().isForbidden());
+        mvc.perform(delete("/goals/" + idGoal).header("Authorization", bearer(tokenBruno)))
+                .andExpect(status().isForbidden());
+
+        mvc.perform(get("/goals/" + idGoal).header("Authorization", bearer(tokenAna)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Meta"));
+    }
+
+    @Test
+    void usuarioNaoMoveMetaParaSkillDeOutroUsuario() throws Exception {
+        var idSkillAna = criarSkill(tokenAna, idAna, "Java");
+        var idSkillBruno = criarSkill(tokenBruno, idBruno, "Go");
+        var idGoal = criarMeta(tokenAna, idAna, idSkillAna, "Meta");
+
+        mvc.perform(put("/goals/" + idGoal).header("Authorization", bearer(tokenAna))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(metaJson(idAna, idSkillBruno, "Meta")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void usuarioNaoAcessaNemAlteraProgressoDeOutroUsuario() throws Exception {
+        var idSkillAna = criarSkill(tokenAna, idAna, "Java");
+        var idSkillBruno = criarSkill(tokenBruno, idBruno, "Go");
+        var idProgresso = criarProgresso(tokenAna, idSkillAna, 10);
+
+        mvc.perform(get("/progress/" + idProgresso).header("Authorization", bearer(tokenBruno)))
+                .andExpect(status().isForbidden());
+        mvc.perform(put("/progress/" + idProgresso).header("Authorization", bearer(tokenBruno))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"skill_id\":" + idSkillBruno + ",\"percentage\":99}"))
+                .andExpect(status().isForbidden());
+        mvc.perform(delete("/progress/" + idProgresso).header("Authorization", bearer(tokenBruno)))
+                .andExpect(status().isForbidden());
+
+        mvc.perform(get("/progress/" + idProgresso).header("Authorization", bearer(tokenAna)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.percentage").value(10));
     }
 
     @Test
@@ -134,16 +163,42 @@ class AutorizacaoDonoDadosTests {
     }
 
     @Test
-    void adminAcessaDadosDeQualquerUsuario() throws Exception {
-        var idSkill = criarSkill(tokenAna, idAna);
+    void usuarioNaoAlteraOsDadosDeOutroUsuario() throws Exception {
+        mvc.perform(put("/usuarios/" + idAna).header("Authorization", bearer(tokenBruno))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Bruno\",\"email\":\"outro@email.com\"}"))
+                .andExpect(status().isForbidden());
 
-        var admin = new Usuario();
-        admin.setNome("Admin");
-        admin.setEmail("admin@email.com");
-        admin.setSenha(passwordEncoder.encode("123456"));
-        admin.setPerfil(Perfil.ADMIN);
-        usuarioRepository.save(admin);
-        var tokenAdmin = login("admin@email.com");
+        assertThat(usuarioRepository.findById(idAna).orElseThrow().getEmail()).isEqualTo("ana@email.com");
+    }
+
+    @Test
+    void cadastroPublicoIgnoraOPerfilInformado() throws Exception {
+        mvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Eva\",\"email\":\"eva@email.com\",\"senha\":\"123456\",\"perfil\":\"ADMIN\"}"))
+                .andExpect(status().isOk());
+        mvc.perform(post("/usuarios")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Leo\",\"email\":\"leo@email.com\",\"senha\":\"123456\",\"perfil\":\"ADMIN\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.perfil").value("USER"));
+
+        assertThat(usuarioRepository.findByEmail("eva@email.com").orElseThrow().getPerfil().name()).isEqualTo("USER");
+    }
+
+    @Test
+    void requisicaoSemTokenOuComTokenInvalidoRetorna401() throws Exception {
+        mvc.perform(get("/goals"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/goals").header("Authorization", "Bearer token.invalido.aqui"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void adminAcessaDadosDeQualquerUsuario() throws Exception {
+        var idSkill = criarSkill(tokenAna, idAna, "Java");
+        var tokenAdmin = criarAdmin();
 
         mvc.perform(get("/api/skills/" + idSkill).header("Authorization", bearer(tokenAdmin)))
                 .andExpect(status().isOk());
@@ -153,41 +208,5 @@ class AutorizacaoDonoDadosTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Nova\"}"))
                 .andExpect(status().isCreated());
-    }
-
-    private String registrar(String nome, String email) throws Exception {
-        var resposta = mvc.perform(post("/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nome\":\"" + nome + "\",\"email\":\"" + email + "\",\"senha\":\"123456\"}"))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        return JsonPath.read(resposta, "$.token");
-    }
-
-    private String login(String email) throws Exception {
-        var resposta = mvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + email + "\",\"senha\":\"123456\"}"))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        return JsonPath.read(resposta, "$.token");
-    }
-
-    private Long criarSkill(String token, Long userId) throws Exception {
-        var resposta = mvc.perform(post("/api/skills").header("Authorization", bearer(token))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(skillJson(userId)))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        Number id = JsonPath.read(resposta, "$.id_skill");
-        return id.longValue();
-    }
-
-    private String skillJson(Long userId) {
-        return "{\"name\":\"Java\",\"categoryId\":" + idCategoria + ",\"level\":\"BEGINNER\",\"userId\":" + userId + "}";
-    }
-
-    private String bearer(String token) {
-        return "Bearer " + token;
     }
 }
