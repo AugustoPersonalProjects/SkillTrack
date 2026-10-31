@@ -4,6 +4,8 @@ import org.apache.coyote.BadRequestException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.mapping.PropertyReferenceException;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import jakarta.persistence.EntityNotFoundException;
@@ -146,9 +148,26 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
 
+    // 400 - Campo inexistente no parâmetro ?sort= das listagens
+    @ExceptionHandler(PropertyReferenceException.class)
+    public ResponseEntity<?> tratarOrdenacaoInvalida() {
+        return ResponseEntity.badRequest().body(Map.of(
+                "error", "Requisição inválida",
+                "message", "O campo de ordenação informado não existe."
+        ));
+    }
+
     // 500 - Erro genérico inesperado
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> tratarErro500(Exception ex) {
+        // os erros de requisição do Spring MVC já trazem o status certo, como 405 (método) e 415 (formato do corpo)
+        if (ex instanceof ErrorResponse erro && erro.getStatusCode().is4xxClientError()) {
+            return ResponseEntity.status(erro.getStatusCode()).headers(erro.getHeaders()).body(Map.of(
+                    "error", "Requisição inválida",
+                    "message", "Esta rota não aceita a requisição enviada."
+            ));
+        }
+
         log.error("Erro inesperado", ex);
         var body = Map.of(
                 "error", "Erro interno do servidor",
