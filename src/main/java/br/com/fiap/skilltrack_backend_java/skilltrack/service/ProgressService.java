@@ -13,6 +13,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDate;
+
 @Service
 public class ProgressService {
 
@@ -24,6 +27,9 @@ public class ProgressService {
 
     @Autowired
     private AutorizacaoService autorizacaoService;
+
+    @Autowired
+    private Clock clock;
 
     @Transactional(readOnly = true)
     public Page<ProgressResponseDTO> listarTodos(Pageable pageable) {
@@ -49,6 +55,9 @@ public class ProgressService {
         autorizacaoService.verificarDono(skill.getUser());
 
         Progress progress = ProgressMapper.toEntity(dto, skill);
+        if (progress.getDate() == null) {
+            progress.setDate(LocalDate.now(clock));
+        }
         var salvo = progressRepository.save(progress);
         return ProgressMapper.toResponseDTO(salvo);
     }

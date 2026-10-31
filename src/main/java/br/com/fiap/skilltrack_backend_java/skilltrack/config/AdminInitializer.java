@@ -12,8 +12,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-// Garante um ADMIN inicial a partir das variáveis ADMIN_EMAIL e ADMIN_PASSWORD.
-// Sem elas nada é feito; se o e-mail já existir, o usuário é promovido a ADMIN sem trocar a senha.
+// Cria o primeiro ADMIN a partir das variáveis ADMIN_EMAIL e ADMIN_PASSWORD.
+// Só age enquanto o sistema não tem nenhum ADMIN: depois disso, os perfis são geridos pelo painel.
 @Component
 public class AdminInitializer implements ApplicationRunner {
 
@@ -40,14 +40,17 @@ public class AdminInitializer implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        if (email.isBlank()) return;
+        if (email.isBlank() || usuarioRepository.countByPerfil(Perfil.ADMIN) > 0) return;
 
         usuarioRepository.findByEmail(email).ifPresentOrElse(usuario -> {
-            if (usuario.getPerfil() != Perfil.ADMIN) {
-                usuario.setPerfil(Perfil.ADMIN);
-                usuarioRepository.save(usuario);
-                log.info("Usuário {} promovido a ADMIN", email);
+            // o cadastro público não confirma o e-mail: a conta só é promovida se a senha também conferir
+            if (!passwordEncoder.matches(senha, usuario.getSenha())) {
+                log.warn("Já existe uma conta com o e-mail {} e a senha dela não é ADMIN_PASSWORD; ela não foi promovida", email);
+                return;
             }
+            usuario.setPerfil(Perfil.ADMIN);
+            usuarioRepository.save(usuario);
+            log.info("Usuário {} promovido a ADMIN", email);
         }, () -> {
             if (senha.length() < 6) {
                 log.warn("ADMIN_PASSWORD ausente ou com menos de 6 caracteres; o ADMIN {} não foi criado", email);
