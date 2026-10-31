@@ -2,6 +2,7 @@ package br.com.fiap.skilltrack_backend_java.skilltrack.service;
 
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.GoalRequestDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.GoalResponseDTO;
+import br.com.fiap.skilltrack_backend_java.skilltrack.exceptions.RegraNegocioException;
 import br.com.fiap.skilltrack_backend_java.skilltrack.mapper.GoalMapper;
 import br.com.fiap.skilltrack_backend_java.skilltrack.model.Goal;
 import br.com.fiap.skilltrack_backend_java.skilltrack.repository.GoalRepository;
@@ -14,8 +15,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class GoalService {
@@ -30,6 +33,9 @@ public class GoalService {
 
     @Autowired
     private AutorizacaoService autorizacaoService;
+
+    @Autowired
+    private Clock clock;
 
     @Transactional(readOnly = true)
     public Page<GoalResponseDTO> listarTodos(Pageable pageable) {
@@ -46,10 +52,7 @@ public class GoalService {
 
     @Transactional
     public GoalResponseDTO salvar(GoalRequestDTO dto) {
-        // valida deadline
-        if (dto.getDeadline() != null && dto.getDeadline().isBefore(LocalDate.now())) {
-            throw new IllegalArgumentException("Deadline deve ser uma data futura");
-        }
+        validarPrazo(dto.getDeadline());
 
         autorizacaoService.verificarDono(dto.getUserId());
 
@@ -70,8 +73,9 @@ public class GoalService {
     public GoalResponseDTO atualizar(Long id, GoalRequestDTO dto) {
         var goalAtual = buscarEntidadeGoalPorId(id);
 
-        if (dto.getDeadline() != null && dto.getDeadline().isBefore(LocalDate.now())) {
-            throw new IllegalArgumentException("Deadline deve ser uma data futura");
+        // uma meta atrasada continua editável: o prazo só é validado quando muda
+        if (!Objects.equals(dto.getDeadline(), goalAtual.getDeadline())) {
+            validarPrazo(dto.getDeadline());
         }
 
         goalAtual.setTitle(dto.getTituloEfetivo());
@@ -116,6 +120,12 @@ public class GoalService {
         var goal = buscarEntidadeGoalPorId(id);
         goal.setCompleted(true);
         goalRepository.save(goal);
+    }
+
+    private void validarPrazo(LocalDate prazo) {
+        if (prazo != null && prazo.isBefore(LocalDate.now(clock))) {
+            throw new RegraNegocioException("A data limite deve ser hoje ou uma data futura.");
+        }
     }
 
     // busca a meta e garante que ela pertence ao usuário logado

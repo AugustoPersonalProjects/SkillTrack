@@ -36,9 +36,4 @@ public class Progress {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "goal_id")
     private Goal goal;
-
-    @PrePersist
-    protected void onCreate() {
-        if (this.date == null) this.date = LocalDate.now();
-    }
 }
