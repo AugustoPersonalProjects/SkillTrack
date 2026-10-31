@@ -134,6 +134,8 @@ docker compose up -d        # sobe o MySQL em localhost:3307
 
 Para recriar o banco do zero: `docker compose down -v && docker compose up -d`.
 
+O `spring-boot:run` ativa o perfil `dev`, que define um `JWT_SECRET` local. Ao iniciar a aplicação pela IDE, ative esse perfil na configuração de execução.
+
 #### Variáveis de ambiente
 
 | Variável | Padrão (dev) | Descrição |
@@ -141,7 +143,7 @@ Para recriar o banco do zero: `docker compose down -v && docker compose up -d`.
 | `DB_URL` | `jdbc:mysql://localhost:3307/skilltrack?...` | URL JDBC do MySQL |
 | `DB_USERNAME` | `skilltrack` | Usuário do banco |
 | `DB_PASSWORD` | `skilltrack` | Senha do banco |
-| `JWT_SECRET` | valor de dev | **Obrigatório trocar em produção** |
+| `JWT_SECRET` | só no perfil `dev` | **Obrigatória em produção**: sem ela a aplicação não inicia. Use um valor longo e aleatório |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:*,http://127.0.0.1:*` | Origens do front-end (separadas por vírgula) |
 | `ADMIN_EMAIL` | vazio | E-mail do ADMIN inicial. Se o usuário já existir, é promovido a ADMIN |
 | `ADMIN_PASSWORD` | vazio | Senha do ADMIN inicial (mínimo de 6 caracteres), usada só se ele ainda não existir |
