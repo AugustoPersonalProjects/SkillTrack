@@ -145,8 +145,8 @@ O `spring-boot:run` ativa o perfil `dev`, que define um `JWT_SECRET` local. Ao i
 | `DB_PASSWORD` | `skilltrack` | Senha do banco |
 | `JWT_SECRET` | só no perfil `dev` | **Obrigatória em produção**: sem ela a aplicação não inicia. Use um valor longo e aleatório |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:*,http://127.0.0.1:*` | Origens do front-end (separadas por vírgula) |
-| `ADMIN_EMAIL` | vazio | E-mail do ADMIN inicial. Se o usuário já existir, é promovido a ADMIN |
-| `ADMIN_PASSWORD` | vazio | Senha do ADMIN inicial (mínimo de 6 caracteres), usada só se ele ainda não existir |
+| `ADMIN_EMAIL` | vazio | E-mail do primeiro ADMIN. Só é usado enquanto o sistema não tem nenhum ADMIN |
+| `ADMIN_PASSWORD` | vazio | Senha do primeiro ADMIN (mínimo de 6 caracteres). Se a conta já existir, precisa ser a senha dela |
 | `ADMIN_NAME` | `Administrador` | Nome do ADMIN inicial |
 
 Nunca coloque credenciais reais no `application.properties`; use as variáveis acima.
@@ -188,12 +188,12 @@ DB_PASSWORD=<senha do Aiven>
 JWT_SECRET=<valor longo e aleatório>
 CORS_ALLOWED_ORIGINS=https://skill-track-front-end.vercel.app
 ADMIN_EMAIL=<seu e-mail>
-ADMIN_PASSWORD=<senha forte, usada só se o usuário ainda não existir>
+ADMIN_PASSWORD=<senha forte; se a conta já existir, a senha dela>
 ```
 
 A porta é definida pelo Render na variável `PORT`, que a aplicação já utiliza. As migrações do Flyway criam as tabelas e as categorias padrão na primeira inicialização.
 
-Para ter acesso ao painel de administração, defina `ADMIN_EMAIL`. Se já existir uma conta com esse e-mail, ela é promovida a ADMIN na próxima inicialização, sem trocar a senha. É preciso sair e entrar de novo no front para o menu de administração aparecer.
+Para criar o primeiro acesso ao painel de administração, defina `ADMIN_EMAIL` e `ADMIN_PASSWORD`. Enquanto o sistema não tiver nenhum ADMIN, a aplicação cria essa conta ao iniciar. Se o e-mail já estiver cadastrado, a conta só é promovida quando `ADMIN_PASSWORD` for a senha dela, porque o cadastro público não confirma quem é o dono do e-mail. Depois disso, os perfis são geridos pelo painel. É preciso sair e entrar de novo no front para o menu de administração aparecer.
 
 > ℹ️ No plano gratuito, o Render suspende o serviço após ~15 minutos sem uso, e a primeira requisição seguinte pode levar até um minuto.
 
