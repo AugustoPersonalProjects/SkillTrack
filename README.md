@@ -1,7 +1,7 @@
 # 🧠 SkillTrack — Sistema de Gestão de Habilidades Profissionais
 
 ![Java](https://img.shields.io/badge/Java-21-red?style=for-the-badge&logo=openjdk)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.6-brightgreen?style=for-the-badge&logo=springboot)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.16-brightgreen?style=for-the-badge&logo=springboot)
 ![MySQL](https://img.shields.io/badge/Database-MySQL%208-blue?style=for-the-badge&logo=mysql)
 ![Maven](https://img.shields.io/badge/Build-Maven-blue?style=for-the-badge&logo=apachemaven)
 ![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
