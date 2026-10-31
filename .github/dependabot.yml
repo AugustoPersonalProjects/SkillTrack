@@ -6,6 +6,7 @@ updates:
       interval: weekly
     groups:
       dependencias:
+        patterns: ["*"]
         update-types: [minor, patch]
     ignore:
       # a migração para o Spring Boot 4 exige mudanças no código e é feita à parte
