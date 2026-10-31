@@ -128,6 +128,15 @@ class MetasEProgressoTests {
     }
 
     @Test
+    void progressoSemPorcentagemEhRecusado() throws Exception {
+        mvc.perform(post("/progress").header("Authorization", bearer(tokenAna))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"skill_id\":" + idSkill + "}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$[0].mensagem").value("A porcentagem é obrigatória"));
+    }
+
+    @Test
     void adminNaoVinculaMetaASkillDeOutroUsuario() throws Exception {
         var tokenBruno = registrar("Bruno", "bruno@email.com");
         var idBruno = usuarioRepository.findByEmail("bruno@email.com").orElseThrow().getId();
