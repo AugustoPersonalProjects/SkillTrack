@@ -55,6 +55,7 @@ O **SkillTrack** foi criado para resolver esse problema, fornecendo uma platafor
 
 - 🛡️ **Administração (perfil ADMIN)**
   - Resumo do sistema em `GET /admin/resumo`: totais e contagem de skills e metas por usuário.
+  - Painel em `GET /admin/dashboard`: usuários novos e ativos, progresso médio, situação das metas, skills por categoria e por nível, atividade por semana e usuários mais ativos, no calendário do Brasil.
   - Gestão de usuários (perfil, dados e exclusão) e de categorias.
   - O sistema nunca fica sem administrador: o último ADMIN não pode ser rebaixado nem excluído.
 

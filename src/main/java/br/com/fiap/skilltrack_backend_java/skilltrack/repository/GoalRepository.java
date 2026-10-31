@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
 @Repository
@@ -31,5 +33,15 @@ public interface GoalRepository extends JpaRepository<Goal, Long> {
     @Query("SELECT g.user.id AS idUsuario, COUNT(g) AS total, SUM(CASE WHEN g.completed = true THEN 1 ELSE 0 END) AS concluidas " +
             "FROM Goal g WHERE g.user IS NOT NULL GROUP BY g.user.id")
     List<TotalPorUsuario> countGroupedByUser();
+
+    long countByCompletedFalseAndDeadlineBefore(LocalDate data);
+
+    @Query("SELECT g.dataCriacao FROM Goal g WHERE g.dataCriacao >= :inicio")
+    List<Instant> findDatasDeCriacaoDesde(@Param("inicio") Instant inicio);
+
+    @Query("SELECT g.dataConclusao FROM Goal g WHERE g.dataConclusao >= :inicio")
+    List<Instant> findDatasDeConclusaoDesde(@Param("inicio") Instant inicio);
+
+    long countByDataCriacaoIsNull();
 
 }

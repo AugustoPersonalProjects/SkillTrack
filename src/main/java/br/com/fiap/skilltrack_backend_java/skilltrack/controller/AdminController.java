@@ -1,5 +1,6 @@
 package br.com.fiap.skilltrack_backend_java.skilltrack.controller;
 
+import br.com.fiap.skilltrack_backend_java.skilltrack.dto.AdminDashboardDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.dto.AdminResumoDTO;
 import br.com.fiap.skilltrack_backend_java.skilltrack.service.AdminService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,5 +21,10 @@ public class AdminController {
     @GetMapping("/resumo")
     public ResponseEntity<AdminResumoDTO> resumo() {
         return ResponseEntity.ok(adminService.buscarResumo());
+    }
+
+    @GetMapping("/dashboard")
+    public ResponseEntity<AdminDashboardDTO> dashboard() {
+        return ResponseEntity.ok(adminService.buscarDashboard());
     }
 }

@@ -38,4 +38,26 @@ class ConsultasTests extends TesteDeIntegracao {
         // usuário logado, skills, progressos em lote e metas em lote
         assertThat(estatisticas.getPrepareStatementCount()).isLessThanOrEqualTo(4);
     }
+
+    @Test
+    void painelDeAdminNaoFazUmaConsultaPorRegistro() throws Exception {
+        var token = registrar("Ana", "ana@email.com");
+        var idAna = idDoUsuario("ana@email.com");
+        for (int i = 0; i < 10; i++) {
+            var idSkill = criarSkill(token, idAna, "Skill " + i);
+            criarProgresso(token, idSkill, 50);
+            criarMeta(token, idAna, idSkill, "Meta " + i);
+        }
+        var tokenAdmin = criarAdmin();
+
+        var estatisticas = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
+        estatisticas.clear();
+
+        mvc.perform(get("/admin/dashboard").header("Authorization", bearer(tokenAdmin)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.indicadores.totalSkills").value(10));
+
+        // usuário logado e uma consulta agregada para cada indicador e gráfico
+        assertThat(estatisticas.getPrepareStatementCount()).isLessThanOrEqualTo(19);
+    }
 }
